@@ -3,9 +3,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
+import { definirProgramme } from "@/lib/use-programme";
+import type { ProfilUtilisateur, ProgrammeSemaine, Qualite } from "@/types";
 
 type Niveau = "debutant" | "intermediaire" | "avance";
 type Priorite = "course" | "muscu" | "explosivite" | "equilibre";
+
+function objectifsDepuisPriorite(priorite: Priorite): Record<Qualite, number> {
+  if (priorite === "equilibre") {
+    return { course: 34, muscu: 33, explosivite: 33 };
+  }
+  const autres: Qualite[] = (["course", "muscu", "explosivite"] as Qualite[]).filter(
+    (q) => q !== priorite
+  );
+  return {
+    [priorite]: 50,
+    [autres[0]]: 25,
+    [autres[1]]: 25,
+  } as Record<Qualite, number>;
+}
 
 const niveaux: { value: Niveau; label: string; desc: string }[] = [
   { value: "debutant", label: "Débutant", desc: "Je démarre ou reprends le sport" },
@@ -33,6 +49,9 @@ export default function OnboardingPage() {
   const [jours, setJours] = useState(4);
   const [duree, setDuree] = useState(60);
   const [materiel, setMateriel] = useState<string[]>([]);
+  const [generation, setGeneration] = useState<"idle" | "en_cours" | "erreur">(
+    "idle"
+  );
 
   const stepKey = steps[step];
   const progress = ((step + 1) / steps.length) * 100;
@@ -52,9 +71,50 @@ export default function OnboardingPage() {
     );
   }
 
-  function next() {
-    if (step < steps.length - 1) setStep(step + 1);
-    else router.push("/dashboard");
+  async function next() {
+    if (step < steps.length - 1) {
+      setStep(step + 1);
+      return;
+    }
+
+    if (!niveau || !priorite) return;
+
+    setGeneration("en_cours");
+    try {
+      const reponse = await fetch("/api/generer-programme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prenom,
+          niveau,
+          priorite,
+          joursDisponibles: jours,
+          dureeSeanceMinutes: duree,
+          materiel,
+        }),
+      });
+
+      if (!reponse.ok) {
+        throw new Error("La génération a échoué");
+      }
+
+      const { programme } = (await reponse.json()) as { programme: ProgrammeSemaine };
+
+      const profil: ProfilUtilisateur = {
+        id: crypto.randomUUID(),
+        prenom,
+        niveau,
+        objectifs: objectifsDepuisPriorite(priorite),
+        joursDisponibles: jours,
+        dureeSeanceMinutes: duree,
+        materiel,
+      };
+
+      definirProgramme({ profil, programme });
+      router.push("/dashboard");
+    } catch {
+      setGeneration("erreur");
+    }
   }
 
   return (
@@ -172,12 +232,33 @@ export default function OnboardingPage() {
               Ton coach IA va générer ton premier programme personnalisé sur la base de ton
               profil. Il s&apos;ajustera chaque semaine selon tes résultats.
             </p>
+            {generation === "en_cours" && (
+              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-foreground-muted border-t-transparent" />
+                <span className="text-sm text-foreground-muted">
+                  Génération de ton programme en cours…
+                </span>
+              </div>
+            )}
+            {generation === "erreur" && (
+              <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
+                La génération a échoué. Vérifie ta connexion et réessaie.
+              </p>
+            )}
           </StepBlock>
         )}
       </div>
 
-      <Button onClick={next} disabled={!canNext} className="w-full">
-        {stepKey === "recap" ? "Générer mon programme" : "Continuer"}
+      <Button
+        onClick={next}
+        disabled={!canNext || generation === "en_cours"}
+        className="w-full"
+      >
+        {stepKey === "recap"
+          ? generation === "en_cours"
+            ? "Génération en cours…"
+            : "Générer mon programme"
+          : "Continuer"}
       </Button>
     </div>
   );

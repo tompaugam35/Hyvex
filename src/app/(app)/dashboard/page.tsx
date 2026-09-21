@@ -1,13 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { QualiteBadge, StatutBadge } from "@/components/ui/Badge";
-import { profilMock, programmeMock } from "@/lib/mock-data";
+import { useProgramme } from "@/lib/use-programme";
 
 export default function DashboardPage() {
-  const prochaineSeance = programmeMock.seances.find(
-    (s) => s.statut === "a_venir"
-  );
-  const seancesCompletees = programmeMock.seances.filter(
+  const { profil, programme } = useProgramme();
+
+  const prochaineSeance = programme.seances.find((s) => s.statut === "a_venir");
+  const seancesCompletees = programme.seances.filter(
     (s) => s.statut === "terminee"
   ).length;
 
@@ -15,11 +17,11 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-6">
       <header className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-foreground-muted">Semaine {programmeMock.numeroSemaine}</p>
-          <h1 className="text-2xl font-semibold">Salut {profilMock.prenom} 👋</h1>
+          <p className="text-sm text-foreground-muted">Semaine {programme.numeroSemaine}</p>
+          <h1 className="text-2xl font-semibold">Salut {profil.prenom} 👋</h1>
         </div>
         <div className="text-right text-sm text-foreground-muted">
-          {seancesCompletees}/{programmeMock.seances.length} séances faites
+          {seancesCompletees}/{programme.seances.length} séances faites
         </div>
       </header>
 
@@ -40,7 +42,7 @@ export default function DashboardPage() {
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-foreground-muted">Programme de la semaine</h3>
         <div className="flex flex-col gap-3">
-          {programmeMock.seances.map((seance) => (
+          {programme.seances.map((seance) => (
             <Link key={seance.id} href={`/seances/${seance.id}`}>
               <Card className="flex items-center justify-between gap-3 hover:border-foreground/20">
                 <div className="flex flex-col gap-1">

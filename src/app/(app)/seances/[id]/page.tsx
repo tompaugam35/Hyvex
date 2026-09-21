@@ -1,18 +1,31 @@
+"use client";
+
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { QualiteBadge, StatutBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { programmeMock } from "@/lib/mock-data";
+import { useProgramme } from "@/lib/use-programme";
 
-export default async function SeanceDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const seance = programmeMock.seances.find((s) => s.id === id);
-  if (!seance) notFound();
+export default function SeanceDetailPage() {
+  const params = useParams<{ id: string }>();
+  const router = useRouter();
+  const { programme, marquerSeanceTerminee, charge } = useProgramme();
+
+  const seance = programme.seances.find((s) => s.id === params.id);
+
+  if (charge && !seance) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Link href="/dashboard" className="text-sm text-foreground-muted">
+          ← Retour au programme
+        </Link>
+        <p className="text-sm text-foreground-muted">Séance introuvable.</p>
+      </div>
+    );
+  }
+
+  if (!seance) return null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -55,7 +68,15 @@ export default async function SeanceDetailPage({
       </section>
 
       {seance.statut === "a_venir" && (
-        <Button className="w-full">Marquer la séance comme terminée</Button>
+        <Button
+          className="w-full"
+          onClick={() => {
+            marquerSeanceTerminee(seance.id);
+            router.push("/dashboard");
+          }}
+        >
+          Marquer la séance comme terminée
+        </Button>
       )}
     </div>
   );
