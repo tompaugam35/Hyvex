@@ -4,6 +4,7 @@ import {
   type ProfilInput,
   type ProgrammeGenere,
 } from "./schema";
+import { deplierEnveloppeUnique, depilerChampTableau } from "./normaliser";
 
 const MODEL = "claude-sonnet-5";
 
@@ -109,20 +110,11 @@ export async function genererProgrammeIA(
     throw new Error("L'IA n'a pas renvoyé de programme structuré.");
   }
 
-  // Il arrive que le modèle renvoie le champ "seances" sous forme de texte
-  // JSON (parfois lui-même ré-enveloppé dans un objet { seances: [...] })
-  // plutôt que le tableau natif attendu : on dépile ces cas avant validation.
-  let seances: unknown = (toolUse.input as { seances?: unknown })?.seances;
-  while (typeof seances === "string") {
-    try {
-      seances = JSON.parse(seances);
-    } catch {
-      break;
-    }
-  }
-  if (!Array.isArray(seances) && seances && typeof seances === "object" && "seances" in seances) {
-    seances = (seances as { seances?: unknown }).seances;
-  }
+  const input = deplierEnveloppeUnique(toolUse.input);
+  const seances = depilerChampTableau(
+    (input as { seances?: unknown })?.seances,
+    "seances"
+  );
 
   const parsed = programmeGenereSchema.safeParse({ seances });
   if (!parsed.success) {

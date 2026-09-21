@@ -1,4 +1,9 @@
-import type { ProfilUtilisateur, ProgrammeSemaine, SeanceLog } from "@/types";
+import type {
+  BilanHebdomadaire,
+  ProfilUtilisateur,
+  ProgrammeSemaine,
+  SeanceLog,
+} from "@/types";
 
 const CLE_STOCKAGE = "hybrid:programme-actuel";
 
@@ -6,6 +11,7 @@ export interface DonneesStockees {
   profil: ProfilUtilisateur;
   programme: ProgrammeSemaine;
   logs: SeanceLog[];
+  dernierBilan?: BilanHebdomadaire;
 }
 
 export function sauvegarderProgramme(donnees: DonneesStockees) {

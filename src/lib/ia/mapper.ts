@@ -1,4 +1,4 @@
-import type { ProgrammeSemaine } from "@/types";
+import type { ProgrammeSemaine, Qualite } from "@/types";
 import type { ProgrammeGenere } from "./schema";
 
 export function versProgrammeSemaine(
@@ -21,5 +21,20 @@ export function versProgrammeSemaine(
         ...exercice,
       })),
     })),
+  };
+}
+
+export function calculerChargeParQualite(
+  programme: ProgrammeSemaine
+): Record<Qualite, number> {
+  const brut: Record<Qualite, number> = { course: 0, muscu: 0, explosivite: 0 };
+  for (const seance of programme.seances) {
+    brut[seance.qualite] += seance.dureeEstimeeMinutes;
+  }
+  const total = brut.course + brut.muscu + brut.explosivite || 1;
+  return {
+    course: Math.round((brut.course / total) * 100),
+    muscu: Math.round((brut.muscu / total) * 100),
+    explosivite: Math.round((brut.explosivite / total) * 100),
   };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { SeanceLog, StatutSeance } from "@/types";
+import type { BilanHebdomadaire, ProgrammeSemaine, SeanceLog, StatutSeance } from "@/types";
 import {
   chargerProgramme,
   sauvegarderProgramme,
@@ -90,12 +90,29 @@ export function useProgramme() {
     notifierAbonnes();
   }, []);
 
+  const appliquerAdaptation = useCallback(
+    (programme: ProgrammeSemaine, bilan: BilanHebdomadaire) => {
+      const suivant: DonneesStockees = {
+        ...etatActuel,
+        programme,
+        logs: [],
+        dernierBilan: bilan,
+      };
+      etatActuel = suivant;
+      sauvegarderProgramme(suivant);
+      notifierAbonnes();
+    },
+    []
+  );
+
   return {
     profil: donnees.profil,
     programme: donnees.programme,
     logs: donnees.logs,
+    dernierBilan: donnees.dernierBilan,
     marquerSeanceTerminee,
     enregistrerRetourSeance,
+    appliquerAdaptation,
     charge: hydrateDepuisStockage,
   };
 }
