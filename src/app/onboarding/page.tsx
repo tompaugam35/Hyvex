@@ -110,7 +110,7 @@ export default function OnboardingPage() {
         materiel,
       };
 
-      definirProgramme({ profil, programme });
+      definirProgramme({ profil, programme, logs: [] });
       router.push("/dashboard");
     } catch {
       setGeneration("erreur");

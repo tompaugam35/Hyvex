@@ -1,10 +1,11 @@
-import type { ProfilUtilisateur, ProgrammeSemaine } from "@/types";
+import type { ProfilUtilisateur, ProgrammeSemaine, SeanceLog } from "@/types";
 
 const CLE_STOCKAGE = "hybrid:programme-actuel";
 
-interface DonneesStockees {
+export interface DonneesStockees {
   profil: ProfilUtilisateur;
   programme: ProgrammeSemaine;
+  logs: SeanceLog[];
 }
 
 export function sauvegarderProgramme(donnees: DonneesStockees) {
@@ -21,7 +22,9 @@ export function chargerProgramme(): DonneesStockees | null {
   try {
     const brut = window.localStorage.getItem(CLE_STOCKAGE);
     if (!brut) return null;
-    return JSON.parse(brut) as DonneesStockees;
+    const donnees = JSON.parse(brut) as Partial<DonneesStockees>;
+    if (!donnees.profil || !donnees.programme) return null;
+    return { ...donnees, logs: donnees.logs ?? [] } as DonneesStockees;
   } catch {
     return null;
   }

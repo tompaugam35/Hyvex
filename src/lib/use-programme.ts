@@ -1,17 +1,20 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
-import type { ProfilUtilisateur, ProgrammeSemaine, StatutSeance } from "@/types";
-import { chargerProgramme, sauvegarderProgramme } from "./programme-store";
+import type { SeanceLog, StatutSeance } from "@/types";
+import {
+  chargerProgramme,
+  sauvegarderProgramme,
+  type DonneesStockees,
+} from "./programme-store";
 import { profilMock, programmeMock } from "./mock-data";
 
-interface Donnees {
-  profil: ProfilUtilisateur;
-  programme: ProgrammeSemaine;
-}
-
-const etatServeur: Donnees = { profil: profilMock, programme: programmeMock };
-let etatActuel: Donnees = etatServeur;
+const etatServeur: DonneesStockees = {
+  profil: profilMock,
+  programme: programmeMock,
+  logs: [],
+};
+let etatActuel: DonneesStockees = etatServeur;
 let hydrateDepuisStockage = false;
 const abonnes = new Set<() => void>();
 
@@ -26,7 +29,7 @@ function subscribe(fn: () => void) {
   };
 }
 
-function getSnapshot(): Donnees {
+function getSnapshot(): DonneesStockees {
   if (!hydrateDepuisStockage) {
     const stocke = chargerProgramme();
     if (stocke) etatActuel = stocke;
@@ -35,11 +38,11 @@ function getSnapshot(): Donnees {
   return etatActuel;
 }
 
-function getServerSnapshot(): Donnees {
+function getServerSnapshot(): DonneesStockees {
   return etatServeur;
 }
 
-export function definirProgramme(donnees: Donnees) {
+export function definirProgramme(donnees: DonneesStockees) {
   etatActuel = donnees;
   hydrateDepuisStockage = true;
   sauvegarderProgramme(donnees);
@@ -50,8 +53,8 @@ export function useProgramme() {
   const donnees = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   const marquerSeanceTerminee = useCallback((seanceId: string) => {
-    const suivant: Donnees = {
-      profil: etatActuel.profil,
+    const suivant: DonneesStockees = {
+      ...etatActuel,
       programme: {
         ...etatActuel.programme,
         seances: etatActuel.programme.seances.map((seance) =>
@@ -66,10 +69,33 @@ export function useProgramme() {
     notifierAbonnes();
   }, []);
 
+  const enregistrerRetourSeance = useCallback((log: SeanceLog) => {
+    const suivant: DonneesStockees = {
+      ...etatActuel,
+      programme: {
+        ...etatActuel.programme,
+        seances: etatActuel.programme.seances.map((seance) =>
+          seance.id === log.seanceId
+            ? { ...seance, statut: "terminee" as StatutSeance }
+            : seance
+        ),
+      },
+      logs: [
+        ...etatActuel.logs.filter((l) => l.seanceId !== log.seanceId),
+        log,
+      ],
+    };
+    etatActuel = suivant;
+    sauvegarderProgramme(suivant);
+    notifierAbonnes();
+  }, []);
+
   return {
     profil: donnees.profil,
     programme: donnees.programme,
+    logs: donnees.logs,
     marquerSeanceTerminee,
+    enregistrerRetourSeance,
     charge: hydrateDepuisStockage,
   };
 }

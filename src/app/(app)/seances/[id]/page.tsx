@@ -67,17 +67,22 @@ export default function SeanceDetailPage() {
         ))}
       </section>
 
-      {seance.statut === "a_venir" && (
-        <Button
-          className="w-full"
-          onClick={() => {
-            marquerSeanceTerminee(seance.id);
-            router.push("/dashboard");
-          }}
-        >
-          Marquer la séance comme terminée
-        </Button>
-      )}
+      {seance.statut === "a_venir" &&
+        (seance.qualite === "muscu" || seance.qualite === "explosivite" ? (
+          <Link href={`/seances/${seance.id}/bilan`}>
+            <Button className="w-full">Terminer la séance</Button>
+          </Link>
+        ) : (
+          <Button
+            className="w-full"
+            onClick={() => {
+              marquerSeanceTerminee(seance.id);
+              router.push("/dashboard");
+            }}
+          >
+            Marquer la séance comme terminée
+          </Button>
+        ))}
     </div>
   );
 }

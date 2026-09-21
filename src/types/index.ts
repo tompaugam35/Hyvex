@@ -34,11 +34,20 @@ export interface Seance {
   exercices: Exercice[];
 }
 
+export type Difficulte = "facile" | "parfait" | "difficile";
+
+export interface RetourExercice {
+  exerciceId: string;
+  difficulte: Difficulte;
+}
+
 export interface SeanceLog {
   seanceId: string;
+  date: string; // ISO
   complete: boolean;
-  rpe: number; // ressenti d'effort 1-10
+  rpe: number; // ressenti d'effort global 1-10
   fatigue: number; // 1-10
+  retoursExercices: RetourExercice[];
   notes?: string;
 }
 
