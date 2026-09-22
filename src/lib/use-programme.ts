@@ -1,118 +1,147 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
-import type { BilanHebdomadaire, ProgrammeSemaine, SeanceLog, StatutSeance } from "@/types";
-import {
-  chargerProgramme,
-  sauvegarderProgramme,
-  type DonneesStockees,
-} from "./programme-store";
-import { profilMock, programmeMock } from "./mock-data";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type {
+  BilanHebdomadaire,
+  ProfilUtilisateur,
+  ProgrammeSemaine,
+  SeanceLog,
+  StatutSeance,
+} from "@/types";
+import { creerClientNavigateur } from "./supabase/client";
+import { versProfil, versProgramme } from "./supabase/mappers";
 
-const etatServeur: DonneesStockees = {
-  profil: profilMock,
-  programme: programmeMock,
-  logs: [],
+interface EtatProgramme {
+  userId: string | null;
+  profil: ProfilUtilisateur | null;
+  programme: ProgrammeSemaine | null;
+  dernierBilan?: BilanHebdomadaire;
+}
+
+const etatInitial: EtatProgramme = {
+  userId: null,
+  profil: null,
+  programme: null,
 };
-let etatActuel: DonneesStockees = etatServeur;
-let hydrateDepuisStockage = false;
-const abonnes = new Set<() => void>();
-
-function notifierAbonnes() {
-  abonnes.forEach((fn) => fn());
-}
-
-function subscribe(fn: () => void) {
-  abonnes.add(fn);
-  return () => {
-    abonnes.delete(fn);
-  };
-}
-
-function getSnapshot(): DonneesStockees {
-  if (!hydrateDepuisStockage) {
-    const stocke = chargerProgramme();
-    if (stocke) etatActuel = stocke;
-    hydrateDepuisStockage = true;
-  }
-  return etatActuel;
-}
-
-function getServerSnapshot(): DonneesStockees {
-  return etatServeur;
-}
-
-export function definirProgramme(donnees: DonneesStockees) {
-  etatActuel = donnees;
-  hydrateDepuisStockage = true;
-  sauvegarderProgramme(donnees);
-  notifierAbonnes();
-}
 
 export function useProgramme() {
-  const donnees = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [etat, setEtat] = useState<EtatProgramme>(etatInitial);
+  const [charge, setCharge] = useState(false);
+  const etatRef = useRef(etat);
+  useEffect(() => {
+    etatRef.current = etat;
+  });
 
-  const marquerSeanceTerminee = useCallback((seanceId: string) => {
-    const suivant: DonneesStockees = {
-      ...etatActuel,
-      programme: {
-        ...etatActuel.programme,
-        seances: etatActuel.programme.seances.map((seance) =>
-          seance.id === seanceId
-            ? { ...seance, statut: "terminee" as StatutSeance }
-            : seance
-        ),
-      },
-    };
-    etatActuel = suivant;
-    sauvegarderProgramme(suivant);
-    notifierAbonnes();
+  const rafraichir = useCallback(async () => {
+    const supabase = creerClientNavigateur();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setEtat(etatInitial);
+      setCharge(true);
+      return;
+    }
+
+    const [{ data: ligneProfil }, { data: ligneProgramme }] = await Promise.all([
+      supabase.from("profils").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("programmes").select("*").eq("user_id", user.id).maybeSingle(),
+    ]);
+
+    setEtat({
+      userId: user.id,
+      profil: ligneProfil ? versProfil(ligneProfil) : null,
+      programme: ligneProgramme ? versProgramme(ligneProgramme) : null,
+      dernierBilan: (ligneProgramme?.dernier_bilan as BilanHebdomadaire | null) ?? undefined,
+    });
+    setCharge(true);
   }, []);
 
-  const enregistrerRetourSeance = useCallback((log: SeanceLog) => {
-    const suivant: DonneesStockees = {
-      ...etatActuel,
-      programme: {
-        ...etatActuel.programme,
-        seances: etatActuel.programme.seances.map((seance) =>
-          seance.id === log.seanceId
-            ? { ...seance, statut: "terminee" as StatutSeance }
-            : seance
-        ),
-      },
-      logs: [
-        ...etatActuel.logs.filter((l) => l.seanceId !== log.seanceId),
-        log,
-      ],
-    };
-    etatActuel = suivant;
-    sauvegarderProgramme(suivant);
-    notifierAbonnes();
+  useEffect(() => {
+    // Chargement initial depuis Supabase : setState différé après l'appel réseau,
+    // pas de rendu en cascade synchrone.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    rafraichir();
+  }, [rafraichir]);
+
+  const marquerSeanceTerminee = useCallback(async (seanceId: string) => {
+    const actuel = etatRef.current;
+    if (!actuel.programme || !actuel.userId) return;
+
+    const seance = actuel.programme.seances.find((s) => s.id === seanceId);
+    if (!seance) return;
+
+    const seances = actuel.programme.seances.map((s) =>
+      s.id === seanceId ? { ...s, statut: "terminee" as StatutSeance } : s
+    );
+
+    setEtat((prev) =>
+      prev.programme ? { ...prev, programme: { ...prev.programme, seances } } : prev
+    );
+
+    const supabase = creerClientNavigateur();
+    await Promise.all([
+      supabase
+        .from("programmes")
+        .update({ seances, updated_at: new Date().toISOString() })
+        .eq("user_id", actuel.userId),
+      supabase.from("journal_seances").insert({
+        user_id: actuel.userId,
+        numero_semaine: actuel.programme.numeroSemaine,
+        seance_id: seance.id,
+        jour: seance.jour,
+        titre: seance.titre,
+        qualite: seance.qualite,
+        date: new Date().toISOString(),
+      }),
+    ]);
   }, []);
 
-  const appliquerAdaptation = useCallback(
-    (programme: ProgrammeSemaine, bilan: BilanHebdomadaire) => {
-      const suivant: DonneesStockees = {
-        ...etatActuel,
-        programme,
-        logs: [],
-        dernierBilan: bilan,
-      };
-      etatActuel = suivant;
-      sauvegarderProgramme(suivant);
-      notifierAbonnes();
-    },
-    []
-  );
+  const enregistrerRetourSeance = useCallback(async (log: SeanceLog) => {
+    const actuel = etatRef.current;
+    if (!actuel.programme || !actuel.userId) return;
+
+    const seance = actuel.programme.seances.find((s) => s.id === log.seanceId);
+    if (!seance) return;
+
+    const seances = actuel.programme.seances.map((s) =>
+      s.id === log.seanceId ? { ...s, statut: "terminee" as StatutSeance } : s
+    );
+
+    setEtat((prev) =>
+      prev.programme ? { ...prev, programme: { ...prev.programme, seances } } : prev
+    );
+
+    const supabase = creerClientNavigateur();
+    await Promise.all([
+      supabase
+        .from("programmes")
+        .update({ seances, updated_at: new Date().toISOString() })
+        .eq("user_id", actuel.userId),
+      supabase.from("journal_seances").insert({
+        user_id: actuel.userId,
+        numero_semaine: actuel.programme.numeroSemaine,
+        seance_id: seance.id,
+        jour: seance.jour,
+        titre: seance.titre,
+        qualite: seance.qualite,
+        date: log.date,
+        rpe: log.rpe,
+        fatigue: log.fatigue,
+        retours_exercices: log.retoursExercices,
+        notes: log.notes ?? null,
+      }),
+    ]);
+  }, []);
 
   return {
-    profil: donnees.profil,
-    programme: donnees.programme,
-    logs: donnees.logs,
-    dernierBilan: donnees.dernierBilan,
+    profil: etat.profil,
+    programme: etat.programme,
+    dernierBilan: etat.dernierBilan,
     marquerSeanceTerminee,
     enregistrerRetourSeance,
-    appliquerAdaptation,
-    charge: hydrateDepuisStockage,
+    rafraichir,
+    charge,
   };
 }

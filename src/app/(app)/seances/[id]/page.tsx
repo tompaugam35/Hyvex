@@ -12,7 +12,7 @@ export default function SeanceDetailPage() {
   const router = useRouter();
   const { programme, marquerSeanceTerminee, charge } = useProgramme();
 
-  const seance = programme.seances.find((s) => s.id === params.id);
+  const seance = programme?.seances.find((s) => s.id === params.id);
 
   if (charge && !seance) {
     return (

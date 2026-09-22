@@ -1,5 +1,21 @@
 import type { ProgrammeSemaine, Qualite } from "@/types";
-import type { ProgrammeGenere } from "./schema";
+import type { ProfilInput, ProgrammeGenere } from "./schema";
+
+export function objectifsDepuisPriorite(
+  priorite: ProfilInput["priorite"]
+): Record<Qualite, number> {
+  if (priorite === "equilibre") {
+    return { course: 34, muscu: 33, explosivite: 33 };
+  }
+  const autres = (["course", "muscu", "explosivite"] as Qualite[]).filter(
+    (q) => q !== priorite
+  );
+  return {
+    [priorite]: 50,
+    [autres[0]]: 25,
+    [autres[1]]: 25,
+  } as Record<Qualite, number>;
+}
 
 export function versProgrammeSemaine(
   genere: ProgrammeGenere,

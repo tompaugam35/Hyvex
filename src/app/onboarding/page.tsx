@@ -1,27 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { definirProgramme } from "@/lib/use-programme";
-import type { ProfilUtilisateur, ProgrammeSemaine, Qualite } from "@/types";
+import { creerClientNavigateur } from "@/lib/supabase/client";
+import { sauvegarderBrouillon } from "@/lib/onboarding-brouillon";
 
 type Niveau = "debutant" | "intermediaire" | "avance";
 type Priorite = "course" | "muscu" | "explosivite" | "equilibre";
-
-function objectifsDepuisPriorite(priorite: Priorite): Record<Qualite, number> {
-  if (priorite === "equilibre") {
-    return { course: 34, muscu: 33, explosivite: 33 };
-  }
-  const autres: Qualite[] = (["course", "muscu", "explosivite"] as Qualite[]).filter(
-    (q) => q !== priorite
-  );
-  return {
-    [priorite]: 50,
-    [autres[0]]: 25,
-    [autres[1]]: 25,
-  } as Record<Qualite, number>;
-}
 
 const niveaux: { value: Niveau; label: string; desc: string }[] = [
   { value: "debutant", label: "Débutant", desc: "Je démarre ou reprends le sport" },
@@ -38,10 +23,9 @@ const priorites: { value: Priorite; label: string }[] = [
 
 const materielOptions = ["Salle de sport", "Extérieur", "Haltères à la maison", "Aucun matériel"];
 
-const steps = ["prenom", "niveau", "priorite", "dispo", "materiel", "recap"] as const;
+const steps = ["prenom", "niveau", "priorite", "dispo", "materiel", "compte"] as const;
 
 export default function OnboardingPage() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [prenom, setPrenom] = useState("");
   const [niveau, setNiveau] = useState<Niveau | null>(null);
@@ -49,12 +33,16 @@ export default function OnboardingPage() {
   const [jours, setJours] = useState(4);
   const [duree, setDuree] = useState(60);
   const [materiel, setMateriel] = useState<string[]>([]);
-  const [generation, setGeneration] = useState<"idle" | "en_cours" | "erreur">(
-    "idle"
-  );
+
+  const [email, setEmail] = useState("");
+  const [lienEnvoye, setLienEnvoye] = useState(false);
+  const [authEtat, setAuthEtat] = useState<"idle" | "en_cours" | "erreur">("idle");
+  const [authErreur, setAuthErreur] = useState("");
 
   const stepKey = steps[step];
   const progress = ((step + 1) / steps.length) * 100;
+
+  const emailValide = /\S+@\S+\.\S+/.test(email);
 
   const canNext = {
     prenom: prenom.trim().length > 0,
@@ -62,7 +50,7 @@ export default function OnboardingPage() {
     priorite: priorite !== null,
     dispo: true,
     materiel: materiel.length > 0,
-    recap: true,
+    compte: emailValide && !lienEnvoye,
   }[stepKey];
 
   function toggleMateriel(option: string) {
@@ -71,50 +59,46 @@ export default function OnboardingPage() {
     );
   }
 
-  async function next() {
-    if (step < steps.length - 1) {
-      setStep(step + 1);
+  async function envoyerLien() {
+    if (!niveau || !priorite) return;
+
+    setAuthEtat("en_cours");
+    setAuthErreur("");
+
+    sauvegarderBrouillon({
+      prenom,
+      niveau,
+      priorite,
+      joursDisponibles: jours,
+      dureeSeanceMinutes: duree,
+      materiel,
+    });
+
+    const supabase = creerClientNavigateur();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: `${window.location.origin}/onboarding/finaliser`,
+      },
+    });
+
+    if (error) {
+      setAuthErreur("Impossible d'envoyer le lien. Vérifie ton adresse email.");
+      setAuthEtat("erreur");
       return;
     }
 
-    if (!niveau || !priorite) return;
+    setAuthEtat("idle");
+    setLienEnvoye(true);
+  }
 
-    setGeneration("en_cours");
-    try {
-      const reponse = await fetch("/api/generer-programme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prenom,
-          niveau,
-          priorite,
-          joursDisponibles: jours,
-          dureeSeanceMinutes: duree,
-          materiel,
-        }),
-      });
-
-      if (!reponse.ok) {
-        throw new Error("La génération a échoué");
-      }
-
-      const { programme } = (await reponse.json()) as { programme: ProgrammeSemaine };
-
-      const profil: ProfilUtilisateur = {
-        id: crypto.randomUUID(),
-        prenom,
-        niveau,
-        objectifs: objectifsDepuisPriorite(priorite),
-        joursDisponibles: jours,
-        dureeSeanceMinutes: duree,
-        materiel,
-      };
-
-      definirProgramme({ profil, programme, logs: [] });
-      router.push("/dashboard");
-    } catch {
-      setGeneration("erreur");
+  async function next() {
+    if (stepKey === "compte") {
+      await envoyerLien();
+      return;
     }
+    setStep(step + 1);
   }
 
   return (
@@ -226,40 +210,67 @@ export default function OnboardingPage() {
           </StepBlock>
         )}
 
-        {stepKey === "recap" && (
-          <StepBlock title={`C'est prêt, ${prenom} !`}>
-            <p className="text-sm text-foreground-muted">
-              Ton coach IA va générer ton premier programme personnalisé sur la base de ton
-              profil. Il s&apos;ajustera chaque semaine selon tes résultats.
-            </p>
-            {generation === "en_cours" && (
-              <div className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-foreground-muted border-t-transparent" />
-                <span className="text-sm text-foreground-muted">
-                  Génération de ton programme en cours…
-                </span>
+        {stepKey === "compte" && (
+          <StepBlock
+            title={
+              lienEnvoye ? "Vérifie ta boîte mail" : "Crée ton compte pour voir ton programme"
+            }
+          >
+            {!lienEnvoye ? (
+              <>
+                <p className="text-sm text-foreground-muted">
+                  Pas de mot de passe à retenir : on t&apos;envoie un lien de connexion par
+                  email. En cliquant dessus, ton programme sera généré automatiquement.
+                </p>
+                <input
+                  autoFocus
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ton@email.com"
+                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                />
+              </>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="text-sm text-foreground-muted">
+                  On vient d&apos;envoyer un lien à{" "}
+                  <span className="font-medium text-foreground">{email}</span>. Ouvre cet email
+                  et clique sur le lien pour générer ton programme.
+                </p>
+                <button
+                  onClick={() => {
+                    setLienEnvoye(false);
+                    setAuthErreur("");
+                  }}
+                  className="self-start text-sm text-foreground-muted underline"
+                >
+                  Changer d&apos;email
+                </button>
               </div>
             )}
-            {generation === "erreur" && (
+            {authEtat === "erreur" && (
               <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-                La génération a échoué. Vérifie ta connexion et réessaie.
+                {authErreur}
               </p>
             )}
           </StepBlock>
         )}
       </div>
 
-      <Button
-        onClick={next}
-        disabled={!canNext || generation === "en_cours"}
-        className="w-full"
-      >
-        {stepKey === "recap"
-          ? generation === "en_cours"
-            ? "Génération en cours…"
-            : "Générer mon programme"
-          : "Continuer"}
-      </Button>
+      {!(stepKey === "compte" && lienEnvoye) && (
+        <Button
+          onClick={next}
+          disabled={!canNext || authEtat === "en_cours"}
+          className="w-full"
+        >
+          {stepKey === "compte"
+            ? authEtat === "en_cours"
+              ? "Un instant…"
+              : "Recevoir mon lien"
+            : "Continuer"}
+        </Button>
+      )}
     </div>
   );
 }

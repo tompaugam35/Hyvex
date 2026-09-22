@@ -64,3 +64,27 @@ export interface BilanHebdomadaire {
   ajustements: string[];
   chargeParQualite: Record<Qualite, number>; // volume relatif 0-100
 }
+
+// Une ligne par séance validée, conservée indéfiniment (jamais écrasée).
+export interface JournalEntree {
+  id: string;
+  numeroSemaine: number;
+  seanceId: string;
+  jour: string;
+  titre: string;
+  qualite: Qualite;
+  date: string; // ISO, date réelle de complétion
+  rpe?: number;
+  fatigue?: number;
+  retoursExercices?: RetourExercice[];
+  notes?: string;
+}
+
+// Résumé d'une semaine passée, créé au moment où l'IA génère la semaine suivante.
+export interface SemaineHistorique {
+  numeroSemaine: number;
+  dateDebut: string;
+  nbSeancesPrevues: number;
+  nbSeancesTerminees: number;
+  bilan?: BilanHebdomadaire;
+}

@@ -1,8 +1,10 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useProgramme } from "@/lib/use-programme";
+import { creerClientNavigateur } from "@/lib/supabase/client";
 
 const niveauLabel = {
   debutant: "Débutant",
@@ -12,6 +14,15 @@ const niveauLabel = {
 
 export default function ProfilPage() {
   const { profil } = useProgramme();
+  const router = useRouter();
+
+  if (!profil) return null;
+
+  async function seDeconnecter() {
+    const supabase = creerClientNavigateur();
+    await supabase.auth.signOut();
+    router.push("/");
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -50,7 +61,7 @@ export default function ProfilPage() {
       </Card>
 
       <Button variant="secondary">Modifier mes objectifs et disponibilités</Button>
-      <Button variant="ghost" className="text-danger">
+      <Button variant="ghost" className="text-danger" onClick={seDeconnecter}>
         Se déconnecter
       </Button>
     </div>

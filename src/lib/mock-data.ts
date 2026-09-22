@@ -1,8 +1,4 @@
-import type {
-  BilanHebdomadaire,
-  ProfilUtilisateur,
-  ProgrammeSemaine,
-} from "@/types";
+import type { ProfilUtilisateur, ProgrammeSemaine } from "@/types";
 
 export const profilMock: ProfilUtilisateur = {
   id: "u1",
@@ -74,19 +70,4 @@ export const programmeMock: ProgrammeSemaine = {
       ],
     },
   ],
-};
-
-export const bilanMock: BilanHebdomadaire = {
-  semaineId: "p0",
-  constats: [
-    "Volume de course bien absorbé, fatigue stable sur la semaine.",
-    "Charges en squat en progression constante depuis 3 semaines.",
-    "Fatigue perçue plus élevée après les séances d'explosivité du jeudi.",
-  ],
-  ajustements: [
-    "Légère hausse du volume de course (+10%) la semaine prochaine.",
-    "Charge de squat augmentée de 2,5kg.",
-    "Un jour de récupération ajouté entre muscu et explosivité.",
-  ],
-  chargeParQualite: { course: 45, muscu: 35, explosivite: 20 },
 };

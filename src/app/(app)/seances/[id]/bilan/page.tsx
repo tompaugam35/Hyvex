@@ -20,7 +20,7 @@ export default function BilanSeancePage() {
   const router = useRouter();
   const { programme, enregistrerRetourSeance, charge } = useProgramme();
 
-  const seance = programme.seances.find((s) => s.id === params.id);
+  const seance = programme?.seances.find((s) => s.id === params.id);
 
   const [retours, setRetours] = useState<Record<string, Difficulte>>({});
   const [rpe, setRpe] = useState(5);

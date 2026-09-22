@@ -4,11 +4,12 @@ import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useProgramme } from "@/lib/use-programme";
-import type { ProgrammeSemaine, BilanHebdomadaire } from "@/types";
 
 export default function BilanPage() {
-  const { profil, programme, logs, dernierBilan, appliquerAdaptation } = useProgramme();
+  const { programme, dernierBilan, rafraichir } = useProgramme();
   const [etat, setEtat] = useState<"idle" | "en_cours" | "erreur">("idle");
+
+  if (!programme) return null;
 
   const seancesRealisees = programme.seances.filter((s) => s.statut !== "a_venir");
   const peutGenerer = seancesRealisees.length > 0 && etat !== "en_cours";
@@ -16,25 +17,9 @@ export default function BilanPage() {
   async function genererBilan() {
     setEtat("en_cours");
     try {
-      const reponse = await fetch("/api/adapter-programme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          profil,
-          seancesPrecedentes: programme.seances,
-          logs,
-          numeroSemainePrecedente: programme.numeroSemaine,
-        }),
-      });
-
+      const reponse = await fetch("/api/adapter-programme", { method: "POST" });
       if (!reponse.ok) throw new Error("La génération a échoué");
-
-      const donnees = (await reponse.json()) as {
-        programme: ProgrammeSemaine;
-        bilan: BilanHebdomadaire;
-      };
-
-      appliquerAdaptation(donnees.programme, donnees.bilan);
+      await rafraichir();
       setEtat("idle");
     } catch {
       setEtat("erreur");

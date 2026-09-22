@@ -1,16 +1,38 @@
+"use client";
+
 import { Card } from "@/components/ui/Card";
 import { ProgressBar } from "@/components/ui/ProgressBar";
-import { QualiteBadge } from "@/components/ui/Badge";
-import { bilanMock, programmeMock } from "@/lib/mock-data";
-import type { Qualite } from "@/types";
+import { GraphiqueMensuel } from "@/components/historique/GraphiqueMensuel";
+import { qualiteInfo } from "@/lib/qualites";
+import { useHistorique } from "@/lib/use-historique";
+import type { JournalEntree, Qualite } from "@/types";
 
-const historiqueSemaines = [
-  { numero: 4, seancesFaites: 4, seancesPrevues: 4 },
-  { numero: 5, seancesFaites: 3, seancesPrevues: 4 },
-  { numero: 6, seancesFaites: 2, seancesPrevues: 4 },
-];
+const qualites: Qualite[] = ["course", "muscu", "explosivite"];
+
+const labelDerniereSeance: Record<Qualite, string> = {
+  course: "Dernière séance de course",
+  muscu: "Dernière séance de musculation",
+  explosivite: "Dernière séance d'explosivité",
+};
+
+function formaterDate(iso: string) {
+  return new Date(iso).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
 
 export default function HistoriquePage() {
+  const { journal, semaines, charge } = useHistorique();
+
+  const derniereParQualite: Partial<Record<Qualite, JournalEntree>> = {};
+  for (const entree of journal) {
+    if (!derniereParQualite[entree.qualite]) {
+      derniereParQualite[entree.qualite] = entree;
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -21,45 +43,33 @@ export default function HistoriquePage() {
       </header>
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-foreground-muted">
-          Répartition actuelle par qualité
-        </h3>
-        <Card className="flex flex-col gap-4">
-          {(Object.keys(bilanMock.chargeParQualite) as Qualite[]).map((q) => (
-            <div key={q} className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <QualiteBadge qualite={q} />
-                <span className="text-sm text-foreground-muted">
-                  {bilanMock.chargeParQualite[q]}%
-                </span>
-              </div>
-              <ProgressBar
-                value={bilanMock.chargeParQualite[q]}
-                colorClassName={
-                  q === "course"
-                    ? "bg-running"
-                    : q === "muscu"
-                    ? "bg-strength"
-                    : "bg-power"
-                }
-              />
-            </div>
-          ))}
+        <h3 className="text-sm font-semibold text-foreground-muted">30 derniers jours</h3>
+        <Card>
+          <GraphiqueMensuel entrees={journal} />
         </Card>
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-foreground-muted">Régularité par semaine</h3>
+        <h3 className="text-sm font-semibold text-foreground-muted">Dernières semaines</h3>
+        {charge && semaines.length === 0 && (
+          <Card>
+            <p className="text-sm text-foreground-muted">
+              Ton historique de semaines apparaîtra ici après ton premier bilan.
+            </p>
+          </Card>
+        )}
         <div className="flex flex-col gap-3">
-          {historiqueSemaines.map((s) => (
-            <Card key={s.numero} className="flex items-center justify-between">
-              <span className="font-medium">Semaine {s.numero}</span>
+          {semaines.map((s) => (
+            <Card key={s.numeroSemaine} className="flex items-center justify-between">
+              <span className="font-medium">Semaine {s.numeroSemaine}</span>
               <div className="flex items-center gap-3">
                 <div className="w-28">
-                  <ProgressBar value={(s.seancesFaites / s.seancesPrevues) * 100} />
+                  <ProgressBar
+                    value={(s.nbSeancesTerminees / s.nbSeancesPrevues) * 100}
+                  />
                 </div>
                 <span className="w-14 text-right text-sm text-foreground-muted">
-                  {s.seancesFaites}/{s.seancesPrevues}
+                  {s.nbSeancesTerminees}/{s.nbSeancesPrevues}
                 </span>
               </div>
             </Card>
@@ -68,15 +78,41 @@ export default function HistoriquePage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-foreground-muted">
-          Semaine {programmeMock.numeroSemaine} en cours
-        </h3>
-        <Card>
-          <p className="text-sm text-foreground-muted">
-            {programmeMock.seances.filter((s) => s.statut === "terminee").length} séance(s)
-            terminée(s) sur {programmeMock.seances.length} prévues.
-          </p>
-        </Card>
+        <h3 className="text-sm font-semibold text-foreground-muted">Dernières séances</h3>
+        <div className="flex flex-col gap-3">
+          {qualites.map((qualite) => {
+            const entree = derniereParQualite[qualite];
+            return (
+              <Card key={qualite} className="flex flex-col gap-2">
+                <p className="text-xs font-semibold text-foreground-muted">
+                  {labelDerniereSeance[qualite]}
+                </p>
+                {entree ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium">{entree.titre}</p>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${qualiteInfo[qualite].className}`}>
+                        {qualiteInfo[qualite].label}
+                      </span>
+                    </div>
+                    <p className="text-sm capitalize text-foreground-muted">
+                      {formaterDate(entree.date)}
+                    </p>
+                    {(entree.rpe !== undefined || entree.fatigue !== undefined) && (
+                      <p className="text-sm text-foreground-muted">
+                        {entree.rpe !== undefined && `RPE ${entree.rpe}/10`}
+                        {entree.rpe !== undefined && entree.fatigue !== undefined && " · "}
+                        {entree.fatigue !== undefined && `Fatigue ${entree.fatigue}/10`}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-sm text-foreground-muted">Pas encore de séance validée.</p>
+                )}
+              </Card>
+            );
+          })}
+        </div>
       </section>
     </div>
   );

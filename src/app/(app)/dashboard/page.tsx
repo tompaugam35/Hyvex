@@ -8,6 +8,8 @@ import { useProgramme } from "@/lib/use-programme";
 export default function DashboardPage() {
   const { profil, programme } = useProgramme();
 
+  if (!profil || !programme) return null;
+
   const prochaineSeance = programme.seances.find((s) => s.statut === "a_venir");
   const seancesCompletees = programme.seances.filter(
     (s) => s.statut === "terminee"

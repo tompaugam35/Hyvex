@@ -21,7 +21,7 @@ export default function Home() {
         <Link href="/onboarding">
           <Button className="w-full">Commencer</Button>
         </Link>
-        <Link href="/dashboard">
+        <Link href="/connexion">
           <Button variant="ghost" className="w-full">
             J&apos;ai déjà un compte
           </Button>
