@@ -5,7 +5,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { GraphiqueMensuel } from "@/components/historique/GraphiqueMensuel";
 import { qualiteInfo } from "@/lib/qualites";
 import { useHistorique } from "@/lib/use-historique";
-import type { JournalEntree, Qualite } from "@/types";
+import type { JournalEntree, Qualite, TerrainCourse } from "@/types";
 
 const qualites: Qualite[] = ["course", "muscu", "explosivite"];
 
@@ -15,12 +15,30 @@ const labelDerniereSeance: Record<Qualite, string> = {
   explosivite: "Dernière séance d'explosivité",
 };
 
+const labelTerrain: Record<TerrainCourse, string> = {
+  route: "Route",
+  trail: "Trail",
+  piste: "Piste",
+};
+
 function formaterDate(iso: string) {
   return new Date(iso).toLocaleDateString("fr-FR", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+}
+
+function formaterDureeCourse(secondes: number) {
+  const min = Math.floor(secondes / 60);
+  const sec = Math.round(secondes % 60);
+  return `${min}:${String(sec).padStart(2, "0")}`;
+}
+
+function formaterCourse(distanceMetres: number, dureeSecondes: number) {
+  const km = distanceMetres / 1000;
+  const allureSecondes = dureeSecondes / km;
+  return `${km.toFixed(1)} km en ${formaterDureeCourse(dureeSecondes)} (allure ${formaterDureeCourse(allureSecondes)}/km)`;
 }
 
 export default function HistoriquePage() {
@@ -98,9 +116,25 @@ export default function HistoriquePage() {
                     <p className="text-sm capitalize text-foreground-muted">
                       {formaterDate(entree.date)}
                     </p>
+                    {entree.distanceMetres !== undefined && entree.dureeSecondes !== undefined && (
+                      <p className="text-sm text-foreground-muted">
+                        {formaterCourse(entree.distanceMetres, entree.dureeSecondes)}
+                      </p>
+                    )}
+                    {(entree.terrain || !!entree.deniveleMetres) && (
+                      <p className="text-sm text-foreground-muted">
+                        {[
+                          entree.terrain && labelTerrain[entree.terrain],
+                          entree.deniveleMetres ? `D+ ${entree.deniveleMetres} m` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
                     {(entree.rpe !== undefined || entree.fatigue !== undefined) && (
                       <p className="text-sm text-foreground-muted">
-                        {entree.rpe !== undefined && `RPE ${entree.rpe}/10`}
+                        {entree.rpe !== undefined &&
+                          `${qualite === "course" ? "Ressenti" : "RPE"} ${entree.rpe}/10`}
                         {entree.rpe !== undefined && entree.fatigue !== undefined && " · "}
                         {entree.fatigue !== undefined && `Fatigue ${entree.fatigue}/10`}
                       </p>

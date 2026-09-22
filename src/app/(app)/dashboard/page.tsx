@@ -2,17 +2,30 @@
 
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { QualiteBadge, StatutBadge } from "@/components/ui/Badge";
+import { CalendrierSemaine } from "@/components/dashboard/CalendrierSemaine";
 import { useProgramme } from "@/lib/use-programme";
+import { joursDeLaSemaineEnCours } from "@/lib/semaine";
 
 export default function DashboardPage() {
-  const { profil, programme } = useProgramme();
+  const { profil, programme, placerSeance } = useProgramme();
 
   if (!profil || !programme) return null;
 
-  const prochaineSeance = programme.seances.find((s) => s.statut === "a_venir");
-  const seancesCompletees = programme.seances.filter(
-    (s) => s.statut === "terminee"
+  const seancesCompletees = programme.seances.filter((s) => s.statut === "terminee").length;
+
+  const aujourdHui = new Date();
+  aujourdHui.setHours(0, 0, 0, 0);
+
+  const prochaine = joursDeLaSemaineEnCours()
+    .filter((j) => j.date >= aujourdHui)
+    .flatMap((j) =>
+      programme.seances
+        .filter((s) => s.jour === j.nom && s.statut === "a_venir")
+        .map((seance) => ({ seance, jourInfo: j }))
+    )[0];
+
+  const nbNonPlacees = programme.seances.filter(
+    (s) => s.jour === null && s.statut === "a_venir"
   ).length;
 
   return (
@@ -27,41 +40,32 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {prochaineSeance && (
-        <Link href={`/seances/${prochaineSeance.id}`}>
+      {prochaine ? (
+        <Link href={`/seances/${prochaine.seance.id}`}>
           <div className="rounded-2xl bg-foreground p-4 text-background">
             <p className="text-xs uppercase tracking-wide text-background/60">
-              Prochaine séance — {prochaineSeance.jour}
+              Prochaine séance — {prochaine.jourInfo.nom}
             </p>
-            <h2 className="mt-1 text-xl font-semibold">{prochaineSeance.titre}</h2>
+            <h2 className="mt-1 text-xl font-semibold">{prochaine.seance.titre}</h2>
             <p className="mt-1 text-sm text-background/70">
-              {prochaineSeance.dureeEstimeeMinutes} min · {prochaineSeance.exercices.length} exercices
+              {prochaine.seance.dureeEstimeeMinutes} min · {prochaine.seance.exercices.length}{" "}
+              exercices
             </p>
           </div>
         </Link>
+      ) : (
+        nbNonPlacees > 0 && (
+          <Card className="bg-surface-muted">
+            <p className="text-sm">
+              {nbNonPlacees} séance{nbNonPlacees > 1 ? "s" : ""} à placer dans ta semaine 👇
+            </p>
+          </Card>
+        )
       )}
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-foreground-muted">Programme de la semaine</h3>
-        <div className="flex flex-col gap-3">
-          {programme.seances.map((seance) => (
-            <Link key={seance.id} href={`/seances/${seance.id}`}>
-              <Card className="flex items-center justify-between gap-3 hover:border-foreground/20">
-                <div className="flex flex-col gap-1">
-                  <p className="text-xs text-foreground-muted">{seance.jour}</p>
-                  <p className="font-medium">{seance.titre}</p>
-                  <div className="flex items-center gap-2">
-                    <QualiteBadge qualite={seance.qualite} />
-                    <span className="text-xs text-foreground-muted">
-                      {seance.dureeEstimeeMinutes} min
-                    </span>
-                  </div>
-                </div>
-                <StatutBadge statut={seance.statut} />
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <h3 className="text-sm font-semibold text-foreground-muted">Cette semaine</h3>
+        <CalendrierSemaine seances={programme.seances} onPlacer={placerSeance} />
       </section>
     </div>
   );

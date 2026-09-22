@@ -33,17 +33,19 @@ const ANALYSER_TOOL = {
       },
       seances: {
         type: "array",
-        description: "Les séances de la semaine suivante, réparties sur les jours disponibles.",
+        description:
+          "Les séances de la semaine suivante (le jour de réalisation sera choisi par l'athlète).",
         items: {
           type: "object",
           properties: {
-            jour: {
-              type: "string",
-              enum: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
-            },
             titre: { type: "string" },
             qualite: { type: "string", enum: ["course", "muscu", "explosivite"] },
             dureeEstimeeMinutes: { type: "number" },
+            intensite: {
+              type: "string",
+              enum: ["faible", "moderee", "elevee"],
+              description: "Niveau d'intensité perçu de la séance.",
+            },
             exercices: {
               type: "array",
               items: {
@@ -60,7 +62,7 @@ const ANALYSER_TOOL = {
               },
             },
           },
-          required: ["jour", "titre", "qualite", "dureeEstimeeMinutes", "exercices"],
+          required: ["titre", "qualite", "dureeEstimeeMinutes", "intensite", "exercices"],
         },
       },
     },
@@ -80,31 +82,65 @@ const difficulteLabel = {
   difficile: "trop difficile",
 };
 
+function formaterDureeCourse(secondes: number) {
+  const min = Math.floor(secondes / 60);
+  const sec = Math.round(secondes % 60);
+  return `${min}:${String(sec).padStart(2, "0")}`;
+}
+
+function decrireCourse(
+  jour: string,
+  seance: AdapterRequest["seancesPrecedentes"][number],
+  log: AdapterRequest["logs"][number] | undefined
+): string {
+  if (!log) {
+    return `- ${jour} — ${seance.titre} (course) : réalisée, sans détail.`;
+  }
+
+  const details: string[] = [];
+  if (log.distanceMetres && log.dureeSecondes) {
+    const km = log.distanceMetres / 1000;
+    const allureSecondes = log.dureeSecondes / km;
+    details.push(
+      `${km.toFixed(1)} km en ${formaterDureeCourse(log.dureeSecondes)} (allure ${formaterDureeCourse(allureSecondes)}/km)`
+    );
+  }
+  if (log.deniveleMetres) details.push(`D+ ${log.deniveleMetres}m`);
+  if (log.terrain) details.push(log.terrain);
+  details.push(`ressenti ${log.rpe}/10`);
+  if (log.notes) details.push(`notes : "${log.notes}"`);
+
+  return `- ${jour} — ${seance.titre} (course) : réalisée. ${details.join(", ")}.`;
+}
+
 function decrireSeance(
   seance: AdapterRequest["seancesPrecedentes"][number],
   logs: AdapterRequest["logs"]
 ): string {
-  if (seance.statut === "a_venir") {
-    return `- ${seance.jour} — ${seance.titre} (${seance.qualite}) : non réalisée`;
-  }
+  const jour = seance.jour ?? "jour non placé";
 
-  if (seance.qualite === "course") {
-    return `- ${seance.jour} — ${seance.titre} (course) : réalisée, mais données de performance pas encore disponibles (intégration Strava à venir) — se baser uniquement sur le fait qu'elle a été complétée.`;
+  if (seance.statut === "a_venir") {
+    return `- ${jour} — ${seance.titre} (${seance.qualite}) : non réalisée`;
   }
 
   const log = logs.find((l) => l.seanceId === seance.id);
-  if (!log) {
-    return `- ${seance.jour} — ${seance.titre} (${seance.qualite}) : réalisée, sans détail de ressenti.`;
+
+  if (seance.qualite === "course") {
+    return decrireCourse(jour, seance, log);
   }
 
-  const retoursExercices = log.retoursExercices
+  if (!log) {
+    return `- ${jour} — ${seance.titre} (${seance.qualite}) : réalisée, sans détail de ressenti.`;
+  }
+
+  const retoursExercices = (log.retoursExercices ?? [])
     .map((r) => {
       const exercice = seance.exercices.find((e) => e.id === r.exerciceId);
       return `${exercice?.nom ?? "exercice"} (${difficulteLabel[r.difficulte]})`;
     })
     .join(", ");
 
-  return `- ${seance.jour} — ${seance.titre} (${seance.qualite}) : réalisée. RPE ${log.rpe}/10, fatigue ${log.fatigue}/10. Exercices : ${retoursExercices}.${log.notes ? ` Notes : "${log.notes}"` : ""}`;
+  return `- ${jour} — ${seance.titre} (${seance.qualite}) : réalisée. RPE ${log.rpe}/10, fatigue ${log.fatigue}/10. Exercices : ${retoursExercices}.${log.notes ? ` Notes : "${log.notes}"` : ""}`;
 }
 
 function construirePrompt(requete: AdapterRequest): string {
@@ -126,9 +162,10 @@ ${detailSeances}
 
 Analyse cette semaine et génère le programme de la semaine ${numeroSemainePrecedente + 1}. Règles :
 - Pour la musculation et l'explosivité, ajuste charges/volumes/exercices en te basant sur le RPE, la fatigue et la difficulté par exercice (ex : si plusieurs exercices étaient "trop facile" et le RPE bas, augmente la charge ou le volume ; si "trop difficile" ou RPE/fatigue élevés, allège ou stabilise).
-- Pour la course, comme les données de performance ne sont pas encore disponibles, ajuste seulement en fonction de la complétion (séance faite ou non) : garde un volume prudent et stable si elle a été faite, n'augmente pas agressivement.
+- Pour la course, ajuste distance/allure/dénivelé en te basant sur le ressenti, l'allure réelle et le terrain communiqués (ex : ressenti bas avec allure rapide → tu peux augmenter légèrement le volume ou l'intensité ; ressenti élevé ou allure en difficulté → stabilise ou allège). Si aucune donnée n'est disponible pour une séance réalisée, garde un volume prudent et stable.
 - Une séance "non réalisée" ne doit pas être ignorée : réduis légèrement la charge globale ou adapte la répartition plutôt que d'accumuler le volume manqué.
 - Respecte toujours ${profil.joursDisponibles} séances, ~${profil.dureeSeanceMinutes} minutes chacune, avec le matériel disponible.
+- L'athlète choisira lui-même quel jour placer chaque séance : ne les attribue pas à des jours précis, mais indique un niveau d'intensité (faible, modérée, élevée) cohérent pour chacune, pour qu'il puisse les espacer correctement.
 - Les constats et ajustements doivent être courts, concrets et directement liés aux données ci-dessus (pas de généralités).
 - Utilise le français pour tout.
 

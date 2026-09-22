@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
-import { QualiteBadge, StatutBadge } from "@/components/ui/Badge";
+import { IntensiteBadge, QualiteBadge, StatutBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useProgramme } from "@/lib/use-programme";
 
 export default function SeanceDetailPage() {
   const params = useParams<{ id: string }>();
-  const router = useRouter();
-  const { programme, marquerSeanceTerminee, charge } = useProgramme();
+  const { programme, charge } = useProgramme();
 
   const seance = programme?.seances.find((s) => s.id === params.id);
 
@@ -34,13 +33,14 @@ export default function SeanceDetailPage() {
       </Link>
 
       <header className="flex flex-col gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <QualiteBadge qualite={seance.qualite} />
+          {seance.intensite && <IntensiteBadge intensite={seance.intensite} />}
           <StatutBadge statut={seance.statut} />
         </div>
         <h1 className="text-2xl font-semibold">{seance.titre}</h1>
         <p className="text-sm text-foreground-muted">
-          {seance.jour} · {seance.dureeEstimeeMinutes} min estimées
+          {seance.jour ?? "Pas encore placée"} · {seance.dureeEstimeeMinutes} min estimées
         </p>
       </header>
 
@@ -67,22 +67,11 @@ export default function SeanceDetailPage() {
         ))}
       </section>
 
-      {seance.statut === "a_venir" &&
-        (seance.qualite === "muscu" || seance.qualite === "explosivite" ? (
-          <Link href={`/seances/${seance.id}/bilan`}>
-            <Button className="w-full">Terminer la séance</Button>
-          </Link>
-        ) : (
-          <Button
-            className="w-full"
-            onClick={() => {
-              marquerSeanceTerminee(seance.id);
-              router.push("/dashboard");
-            }}
-          >
-            Marquer la séance comme terminée
-          </Button>
-        ))}
+      {seance.statut === "a_venir" && (
+        <Link href={`/seances/${seance.id}/bilan`}>
+          <Button className="w-full">Terminer la séance</Button>
+        </Link>
+      )}
     </div>
   );
 }

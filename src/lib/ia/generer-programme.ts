@@ -16,17 +16,18 @@ const CREER_PROGRAMME_TOOL = {
     properties: {
       seances: {
         type: "array",
-        description: "Les séances de la semaine, réparties sur les jours disponibles.",
+        description: "Les séances de la semaine (le jour de réalisation sera choisi par l'athlète).",
         items: {
           type: "object",
           properties: {
-            jour: {
-              type: "string",
-              enum: ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"],
-            },
             titre: { type: "string", description: "Ex: \"Course — Fractionné\"" },
             qualite: { type: "string", enum: ["course", "muscu", "explosivite"] },
             dureeEstimeeMinutes: { type: "number" },
+            intensite: {
+              type: "string",
+              enum: ["faible", "moderee", "elevee"],
+              description: "Niveau d'intensité perçu de la séance.",
+            },
             exercices: {
               type: "array",
               items: {
@@ -49,7 +50,7 @@ const CREER_PROGRAMME_TOOL = {
               },
             },
           },
-          required: ["jour", "titre", "qualite", "dureeEstimeeMinutes", "exercices"],
+          required: ["titre", "qualite", "dureeEstimeeMinutes", "intensite", "exercices"],
         },
       },
     },
@@ -78,13 +79,13 @@ function construirePrompt(profil: ProfilInput): string {
 - Disponibilité : ${profil.joursDisponibles} jours d'entraînement par semaine, environ ${profil.dureeSeanceMinutes} minutes par séance
 - Matériel disponible : ${profil.materiel.join(", ")}
 
-Génère le programme d'entraînement de la première semaine pour cet athlète hybride (course à pied + musculation + explosivité). Contraintes :
-- Exactement ${profil.joursDisponibles} séances, réparties sur des jours différents et espacées raisonnablement dans la semaine.
+Génère le programme d'entraînement de la première semaine pour cet athlète hybride (course à pied + musculation + explosivité). L'athlète choisira lui-même quel jour placer chaque séance : ne les attribue donc pas à des jours précis. Contraintes :
+- Exactement ${profil.joursDisponibles} séances.
 - Chaque séance dure environ ${profil.dureeSeanceMinutes} minutes.
 - N'utilise que du matériel parmi : ${profil.materiel.join(", ")}.
 - Adapte le volume et l'intensité au niveau ${profil.niveau}.
 - Respecte la priorité indiquée tout en gardant un minimum des deux autres qualités physiques pour rester "hybride".
-- Prévois une répartition cohérente dans la semaine (ex: pas deux séances intenses de la même qualité coup sur coup, récupération suffisante entre musculation lourde et explosivité).
+- Indique un niveau d'intensité (faible, modérée, élevée) cohérent pour chaque séance, pour que l'athlète puisse lui-même espacer les séances intenses en les plaçant dans la semaine.
 - Utilise le français pour tous les titres et noms d'exercices.
 
 Appelle l'outil creer_programme avec le résultat.`;

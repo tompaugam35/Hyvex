@@ -14,6 +14,8 @@ export interface ProfilUtilisateur {
 
 export type StatutSeance = "a_venir" | "terminee" | "manquee";
 
+export type Intensite = "faible" | "moderee" | "elevee";
+
 export interface Exercice {
   id: string;
   nom: string;
@@ -26,15 +28,18 @@ export interface Exercice {
 
 export interface Seance {
   id: string;
-  jour: string; // ex: "Lundi"
+  jour: string | null; // ex: "Lundi", choisi par l'utilisateur ; null tant que non placée
   titre: string;
   qualite: Qualite;
   dureeEstimeeMinutes: number;
+  intensite?: Intensite;
   statut: StatutSeance;
   exercices: Exercice[];
 }
 
 export type Difficulte = "facile" | "parfait" | "difficile";
+
+export type TerrainCourse = "route" | "trail" | "piste";
 
 export interface RetourExercice {
   exerciceId: string;
@@ -46,9 +51,14 @@ export interface SeanceLog {
   date: string; // ISO
   complete: boolean;
   rpe: number; // ressenti d'effort global 1-10
-  fatigue: number; // 1-10
-  retoursExercices: RetourExercice[];
+  fatigue?: number; // 1-10, non renseigné pour la course
+  retoursExercices?: RetourExercice[];
   notes?: string;
+  // Saisie manuelle d'une séance de course.
+  distanceMetres?: number;
+  dureeSecondes?: number;
+  deniveleMetres?: number;
+  terrain?: TerrainCourse;
 }
 
 export interface ProgrammeSemaine {
@@ -68,8 +78,8 @@ export interface BilanHebdomadaire {
 // Une ligne par séance validée, conservée indéfiniment (jamais écrasée).
 export interface JournalEntree {
   id: string;
-  numeroSemaine: number;
-  seanceId: string;
+  numeroSemaine?: number;
+  seanceId?: string; // absent pour les entrées importées depuis Strava
   jour: string;
   titre: string;
   qualite: Qualite;
@@ -78,6 +88,11 @@ export interface JournalEntree {
   fatigue?: number;
   retoursExercices?: RetourExercice[];
   notes?: string;
+  source?: "manuel" | "strava";
+  distanceMetres?: number;
+  dureeSecondes?: number;
+  deniveleMetres?: number;
+  terrain?: TerrainCourse;
 }
 
 // Résumé d'une semaine passée, créé au moment où l'IA génère la semaine suivante.

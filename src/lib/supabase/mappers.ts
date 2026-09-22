@@ -29,8 +29,8 @@ export interface LigneProgramme {
 
 export interface LigneJournalEntree {
   id: string;
-  numero_semaine: number;
-  seance_id: string;
+  numero_semaine: number | null;
+  seance_id: string | null;
   jour: string;
   titre: string;
   qualite: string;
@@ -39,6 +39,11 @@ export interface LigneJournalEntree {
   fatigue: number | null;
   retours_exercices: unknown;
   notes: string | null;
+  source: string | null;
+  distance_metres: number | null;
+  duree_secondes: number | null;
+  denivele_metres: number | null;
+  terrain: string | null;
 }
 
 export interface LigneSemaineHistorique {
@@ -73,8 +78,8 @@ export function versProgramme(ligne: LigneProgramme): ProgrammeSemaine {
 export function versJournalEntree(ligne: LigneJournalEntree): JournalEntree {
   return {
     id: ligne.id,
-    numeroSemaine: ligne.numero_semaine,
-    seanceId: ligne.seance_id,
+    numeroSemaine: ligne.numero_semaine ?? undefined,
+    seanceId: ligne.seance_id ?? undefined,
     jour: ligne.jour,
     titre: ligne.titre,
     qualite: ligne.qualite as JournalEntree["qualite"],
@@ -83,6 +88,11 @@ export function versJournalEntree(ligne: LigneJournalEntree): JournalEntree {
     fatigue: ligne.fatigue ?? undefined,
     retoursExercices: (ligne.retours_exercices as JournalEntree["retoursExercices"]) ?? undefined,
     notes: ligne.notes ?? undefined,
+    source: (ligne.source as JournalEntree["source"]) ?? undefined,
+    distanceMetres: ligne.distance_metres ?? undefined,
+    dureeSecondes: ligne.duree_secondes ?? undefined,
+    deniveleMetres: ligne.denivele_metres ?? undefined,
+    terrain: (ligne.terrain as JournalEntree["terrain"]) ?? undefined,
   };
 }
 

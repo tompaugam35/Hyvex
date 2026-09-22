@@ -22,19 +22,13 @@ export const exerciceGenereSchema = z.object({
   reposSecondes: z.number().int().optional(),
 });
 
+export const intensiteSchema = z.enum(["faible", "moderee", "elevee"]);
+
 export const seanceGenereeSchema = z.object({
-  jour: z.enum([
-    "Lundi",
-    "Mardi",
-    "Mercredi",
-    "Jeudi",
-    "Vendredi",
-    "Samedi",
-    "Dimanche",
-  ]),
   titre: z.string(),
   qualite: qualiteSchema,
   dureeEstimeeMinutes: z.number().int(),
+  intensite: intensiteSchema,
   exercices: z.array(exerciceGenereSchema).min(1),
 });
 
@@ -58,10 +52,11 @@ export const profilCompletSchema = z.object({
 
 export const seanceRealiseeSchema = z.object({
   id: z.string(),
-  jour: z.string(),
+  jour: z.string().nullable(),
   titre: z.string(),
   qualite: qualiteSchema,
   dureeEstimeeMinutes: z.number(),
+  intensite: intensiteSchema.optional(),
   statut: statutSeanceSchema,
   exercices: z.array(
     z.object({
@@ -81,14 +76,21 @@ export const seanceLogInputSchema = z.object({
   date: z.string(),
   complete: z.boolean(),
   rpe: z.number(),
-  fatigue: z.number(),
-  retoursExercices: z.array(
-    z.object({
-      exerciceId: z.string(),
-      difficulte: difficulteSchema,
-    })
-  ),
+  fatigue: z.number().optional(),
+  retoursExercices: z
+    .array(
+      z.object({
+        exerciceId: z.string(),
+        difficulte: difficulteSchema,
+      })
+    )
+    .optional(),
   notes: z.string().optional(),
+  // Saisie manuelle d'une séance de course.
+  distanceMetres: z.number().optional(),
+  dureeSecondes: z.number().optional(),
+  deniveleMetres: z.number().optional(),
+  terrain: z.enum(["route", "trail", "piste"]).optional(),
 });
 
 export const adapterRequestSchema = z.object({

@@ -3,7 +3,7 @@ import { creerClientServeur } from "@/lib/supabase/server";
 import { versProfil, versProgramme, versJournalEntree } from "@/lib/supabase/mappers";
 import { adapterProgrammeIA } from "@/lib/ia/adapter-programme";
 import { versProgrammeSemaine, calculerChargeParQualite } from "@/lib/ia/mapper";
-import type { BilanHebdomadaire, SeanceLog } from "@/types";
+import type { BilanHebdomadaire } from "@/types";
 
 export async function POST() {
   const supabase = await creerClientServeur();
@@ -34,21 +34,24 @@ export async function POST() {
     .eq("user_id", user.id)
     .eq("numero_semaine", programmePrecedent.numeroSemaine);
 
-  // Le prompt d'adaptation ignore déjà les logs pour la course (pas de données
-  // tant que Strava n'est pas branché) : on ne transmet que muscu/explosivité,
-  // pour lesquelles rpe/fatigue/retours sont toujours renseignés.
-  const logs: SeanceLog[] = (lignesJournal ?? [])
-    .filter((l) => l.qualite !== "course")
+  // On ne transmet que les entrées rattachées à une séance planifiée (les
+  // éventuelles courses importées depuis Strava n'ont pas de seance_id).
+  const logs = (lignesJournal ?? [])
+    .filter((l) => l.seance_id !== null)
     .map((ligne) => {
       const entree = versJournalEntree(ligne);
       return {
-        seanceId: entree.seanceId,
+        seanceId: entree.seanceId!,
         date: entree.date,
         complete: true,
         rpe: entree.rpe ?? 5,
-        fatigue: entree.fatigue ?? 5,
-        retoursExercices: entree.retoursExercices ?? [],
+        fatigue: entree.fatigue,
+        retoursExercices: entree.retoursExercices,
         notes: entree.notes,
+        distanceMetres: entree.distanceMetres,
+        dureeSecondes: entree.dureeSecondes,
+        deniveleMetres: entree.deniveleMetres,
+        terrain: entree.terrain,
       };
     });
 

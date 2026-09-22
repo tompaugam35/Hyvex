@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 import { creerClientNavigateur } from "./supabase/client";
 import { versProfil, versProgramme } from "./supabase/mappers";
+import { jourDepuisDate } from "./semaine";
 
 interface EtatProgramme {
   userId: string | null;
@@ -65,39 +66,6 @@ export function useProgramme() {
     rafraichir();
   }, [rafraichir]);
 
-  const marquerSeanceTerminee = useCallback(async (seanceId: string) => {
-    const actuel = etatRef.current;
-    if (!actuel.programme || !actuel.userId) return;
-
-    const seance = actuel.programme.seances.find((s) => s.id === seanceId);
-    if (!seance) return;
-
-    const seances = actuel.programme.seances.map((s) =>
-      s.id === seanceId ? { ...s, statut: "terminee" as StatutSeance } : s
-    );
-
-    setEtat((prev) =>
-      prev.programme ? { ...prev, programme: { ...prev.programme, seances } } : prev
-    );
-
-    const supabase = creerClientNavigateur();
-    await Promise.all([
-      supabase
-        .from("programmes")
-        .update({ seances, updated_at: new Date().toISOString() })
-        .eq("user_id", actuel.userId),
-      supabase.from("journal_seances").insert({
-        user_id: actuel.userId,
-        numero_semaine: actuel.programme.numeroSemaine,
-        seance_id: seance.id,
-        jour: seance.jour,
-        titre: seance.titre,
-        qualite: seance.qualite,
-        date: new Date().toISOString(),
-      }),
-    ]);
-  }, []);
-
   const enregistrerRetourSeance = useCallback(async (log: SeanceLog) => {
     const actuel = etatRef.current;
     if (!actuel.programme || !actuel.userId) return;
@@ -123,24 +91,47 @@ export function useProgramme() {
         user_id: actuel.userId,
         numero_semaine: actuel.programme.numeroSemaine,
         seance_id: seance.id,
-        jour: seance.jour,
+        jour: seance.jour ?? jourDepuisDate(new Date(log.date)),
         titre: seance.titre,
         qualite: seance.qualite,
         date: log.date,
         rpe: log.rpe,
-        fatigue: log.fatigue,
-        retours_exercices: log.retoursExercices,
+        fatigue: log.fatigue ?? null,
+        retours_exercices: log.retoursExercices ?? null,
         notes: log.notes ?? null,
+        distance_metres: log.distanceMetres ?? null,
+        duree_secondes: log.dureeSecondes ?? null,
+        denivele_metres: log.deniveleMetres ?? null,
+        terrain: log.terrain ?? null,
       }),
     ]);
+  }, []);
+
+  const placerSeance = useCallback(async (seanceId: string, jour: string | null) => {
+    const actuel = etatRef.current;
+    if (!actuel.programme || !actuel.userId) return;
+
+    const seances = actuel.programme.seances.map((s) =>
+      s.id === seanceId ? { ...s, jour } : s
+    );
+
+    setEtat((prev) =>
+      prev.programme ? { ...prev, programme: { ...prev.programme, seances } } : prev
+    );
+
+    const supabase = creerClientNavigateur();
+    await supabase
+      .from("programmes")
+      .update({ seances, updated_at: new Date().toISOString() })
+      .eq("user_id", actuel.userId);
   }, []);
 
   return {
     profil: etat.profil,
     programme: etat.programme,
     dernierBilan: etat.dernierBilan,
-    marquerSeanceTerminee,
     enregistrerRetourSeance,
+    placerSeance,
     rafraichir,
     charge,
   };

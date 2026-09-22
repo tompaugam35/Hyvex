@@ -27,10 +27,11 @@ export function versProgrammeSemaine(
     dateDebut: new Date().toISOString().slice(0, 10),
     seances: genere.seances.map((seance) => ({
       id: crypto.randomUUID(),
-      jour: seance.jour,
+      jour: null,
       titre: seance.titre,
       qualite: seance.qualite,
       dureeEstimeeMinutes: seance.dureeEstimeeMinutes,
+      intensite: seance.intensite,
       statut: "a_venir",
       exercices: seance.exercices.map((exercice) => ({
         id: crypto.randomUUID(),
