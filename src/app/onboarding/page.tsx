@@ -2,35 +2,57 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { SelectCard } from "@/components/ui/SelectCard";
+import { Stepper } from "@/components/ui/Stepper";
 import { creerClientNavigateur } from "@/lib/supabase/client";
 import { sauvegarderBrouillon } from "@/lib/onboarding-brouillon";
+import {
+  niveaux,
+  qualiteOptions,
+  qualiteLabelLong,
+  objectifPlaceholder,
+  materielOptions,
+} from "@/lib/quiz-options";
+import type { AutreSport, NiveauSportif, PerformanceCourse, PerformanceMuscu, Qualite } from "@/types";
 
-type Niveau = "debutant" | "intermediaire" | "avance";
-type Priorite = "course" | "muscu" | "explosivite" | "equilibre";
+type StepKey =
+  | "prenom"
+  | "niveau"
+  | "qualites"
+  | "niveau-performance"
+  | "objectifs"
+  | "autres-sports"
+  | "dispo"
+  | "materiel"
+  | "compte";
 
-const niveaux: { value: Niveau; label: string; desc: string }[] = [
-  { value: "debutant", label: "Débutant", desc: "Je démarre ou reprends le sport" },
-  { value: "intermediaire", label: "Intermédiaire", desc: "Je m'entraîne régulièrement depuis un moment" },
-  { value: "avance", label: "Avancé", desc: "Je m'entraîne sérieusement depuis plusieurs années" },
-];
-
-const priorites: { value: Priorite; label: string }[] = [
-  { value: "course", label: "Courir plus vite / plus loin" },
-  { value: "muscu", label: "Devenir plus fort" },
-  { value: "explosivite", label: "Gagner en explosivité" },
-  { value: "equilibre", label: "Progresser partout, de façon équilibrée" },
-];
-
-const materielOptions = ["Salle de sport", "Extérieur", "Haltères à la maison", "Aucun matériel"];
-
-const steps = ["prenom", "niveau", "priorite", "dispo", "materiel", "compte"] as const;
+function calculerSteps(qualites: Qualite[]): StepKey[] {
+  const inclureNiveauPerf = qualites.includes("course") || qualites.includes("muscu");
+  return [
+    "prenom",
+    "niveau",
+    "qualites",
+    ...(inclureNiveauPerf ? (["niveau-performance"] as StepKey[]) : []),
+    "objectifs",
+    "autres-sports",
+    "dispo",
+    "materiel",
+    "compte",
+  ];
+}
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [prenom, setPrenom] = useState("");
-  const [niveau, setNiveau] = useState<Niveau | null>(null);
-  const [priorite, setPriorite] = useState<Priorite | null>(null);
-  const [jours, setJours] = useState(4);
+  const [niveau, setNiveau] = useState<NiveauSportif | null>(null);
+  const [qualites, setQualites] = useState<Qualite[]>([]);
+  const [performanceCourse, setPerformanceCourse] = useState<PerformanceCourse>({});
+  const [performanceMuscu, setPerformanceMuscu] = useState<PerformanceMuscu>({});
+  const [objectifsTexte, setObjectifsTexte] = useState<Partial<Record<Qualite, string>>>({});
+  const [autresSports, setAutresSports] = useState<AutreSport[]>([]);
+  const [nouveauSportNom, setNouveauSportNom] = useState("");
+  const [nouveauSportFreq, setNouveauSportFreq] = useState(1);
+  const [seances, setSeances] = useState(4);
   const [duree, setDuree] = useState(60);
   const [materiel, setMateriel] = useState<string[]>([]);
 
@@ -39,19 +61,36 @@ export default function OnboardingPage() {
   const [authEtat, setAuthEtat] = useState<"idle" | "en_cours" | "erreur">("idle");
   const [authErreur, setAuthErreur] = useState("");
 
+  const steps = calculerSteps(qualites);
   const stepKey = steps[step];
   const progress = ((step + 1) / steps.length) * 100;
 
   const emailValide = /\S+@\S+\.\S+/.test(email);
+  const sommeAutresSports = autresSports.reduce((t, s) => t + s.frequenceParSemaine, 0);
+  const plancherSeances = sommeAutresSports + 1;
+  const seancesEffectif = Math.max(seances, plancherSeances);
+  const seancesHybrid = seancesEffectif - sommeAutresSports;
 
   const canNext = {
     prenom: prenom.trim().length > 0,
     niveau: niveau !== null,
-    priorite: priorite !== null,
+    qualites: qualites.length > 0,
+    "niveau-performance": true,
+    objectifs: true,
+    "autres-sports": true,
     dispo: true,
     materiel: materiel.length > 0,
     compte: emailValide && !lienEnvoye,
   }[stepKey];
+
+  function toggleQualite(q: Qualite) {
+    setQualites((prev) => {
+      if (prev.length === 3) return [q];
+      if (prev.includes(q)) return prev.filter((x) => x !== q);
+      if (prev.length >= 2) return prev;
+      return [...prev, q];
+    });
+  }
 
   function toggleMateriel(option: string) {
     setMateriel((prev) =>
@@ -59,8 +98,16 @@ export default function OnboardingPage() {
     );
   }
 
+  function ajouterSport() {
+    const nom = nouveauSportNom.trim();
+    if (!nom) return;
+    setAutresSports((prev) => [...prev, { nom, frequenceParSemaine: nouveauSportFreq }]);
+    setNouveauSportNom("");
+    setNouveauSportFreq(1);
+  }
+
   async function envoyerLien() {
-    if (!niveau || !priorite) return;
+    if (!niveau || qualites.length === 0) return;
 
     setAuthEtat("en_cours");
     setAuthErreur("");
@@ -68,8 +115,12 @@ export default function OnboardingPage() {
     sauvegarderBrouillon({
       prenom,
       niveau,
-      priorite,
-      joursDisponibles: jours,
+      qualitesPrioritaires: qualites,
+      performanceCourse,
+      performanceMuscu,
+      objectifsTexte,
+      autresSports,
+      seancesParSemaine: seancesEffectif,
       dureeSeanceMinutes: duree,
       materiel,
     });
@@ -152,18 +203,193 @@ export default function OnboardingPage() {
           </StepBlock>
         )}
 
-        {stepKey === "priorite" && (
-          <StepBlock title="Qu'est-ce qui est le plus important pour toi ?">
+        {stepKey === "qualites" && (
+          <StepBlock title="Sur quoi as-tu envie de progresser ?">
             <div className="flex flex-col gap-3">
-              {priorites.map((p) => (
+              {qualiteOptions.map((q) => (
                 <SelectCard
-                  key={p.value}
-                  selected={priorite === p.value}
-                  onClick={() => setPriorite(p.value)}
+                  key={q.value}
+                  selected={qualites.includes(q.value)}
+                  disabled={qualites.length === 2 && !qualites.includes(q.value)}
+                  onClick={() => toggleQualite(q.value)}
                 >
-                  <p className="font-medium">{p.label}</p>
+                  <p className="font-medium">{q.label}</p>
                 </SelectCard>
               ))}
+              <SelectCard
+                selected={qualites.length === 3}
+                disabled={qualites.length > 0 && qualites.length < 3}
+                onClick={() => setQualites(["course", "muscu", "explosivite"])}
+              >
+                <p className="font-medium">Les trois</p>
+              </SelectCard>
+            </div>
+            <p className="mt-3 text-xs text-foreground-muted">
+              Tu peux choisir une ou deux qualités, ou les trois.
+            </p>
+          </StepBlock>
+        )}
+
+        {stepKey === "niveau-performance" && (
+          <StepBlock title="Quel est ton niveau actuel ?">
+            <div className="flex flex-col gap-6">
+              {qualites.includes("course") && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold text-foreground-muted">Course à pied</h3>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-foreground-muted">Temps sur 5 km</label>
+                    <input
+                      value={performanceCourse.temps5km ?? ""}
+                      onChange={(e) =>
+                        setPerformanceCourse((prev) => ({ ...prev, temps5km: e.target.value }))
+                      }
+                      placeholder="Optionnel — ex : 22:30"
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-foreground-muted">Temps sur 10 km</label>
+                    <input
+                      value={performanceCourse.temps10km ?? ""}
+                      onChange={(e) =>
+                        setPerformanceCourse((prev) => ({ ...prev, temps10km: e.target.value }))
+                      }
+                      placeholder="Optionnel — ex : 47:00"
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-foreground-muted">Temps sur semi (21 km)</label>
+                    <input
+                      value={performanceCourse.temps21km ?? ""}
+                      onChange={(e) =>
+                        setPerformanceCourse((prev) => ({ ...prev, temps21km: e.target.value }))
+                      }
+                      placeholder="Optionnel — ex : 1h45"
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {qualites.includes("muscu") && (
+                <div className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold text-foreground-muted">Musculation</h3>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-foreground-muted">Développé couché</label>
+                    <input
+                      value={performanceMuscu.developpeCouche ?? ""}
+                      onChange={(e) =>
+                        setPerformanceMuscu((prev) => ({
+                          ...prev,
+                          developpeCouche: e.target.value,
+                        }))
+                      }
+                      placeholder="Optionnel — ex : 80kg"
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-foreground-muted">Soulevé de terre</label>
+                    <input
+                      value={performanceMuscu.souleveDeTerre ?? ""}
+                      onChange={(e) =>
+                        setPerformanceMuscu((prev) => ({
+                          ...prev,
+                          souleveDeTerre: e.target.value,
+                        }))
+                      }
+                      placeholder="Optionnel — ex : 120kg"
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-sm text-foreground-muted">Squat</label>
+                    <input
+                      value={performanceMuscu.squat ?? ""}
+                      onChange={(e) =>
+                        setPerformanceMuscu((prev) => ({ ...prev, squat: e.target.value }))
+                      }
+                      placeholder="Optionnel — ex : 100kg"
+                      className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-foreground-muted">
+                Rien n&apos;est obligatoire — plus tu réponds, plus ton coach IA pourra te
+                proposer un programme précis.
+              </p>
+            </div>
+          </StepBlock>
+        )}
+
+        {stepKey === "objectifs" && (
+          <StepBlock title="As-tu des objectifs précis ?">
+            <div className="flex flex-col gap-4">
+              {qualites.map((q) => (
+                <div key={q} className="flex flex-col gap-2">
+                  <label className="text-sm text-foreground-muted">{qualiteLabelLong[q]}</label>
+                  <input
+                    value={objectifsTexte[q] ?? ""}
+                    onChange={(e) =>
+                      setObjectifsTexte((prev) => ({ ...prev, [q]: e.target.value }))
+                    }
+                    placeholder={objectifPlaceholder[q]}
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                  />
+                </div>
+              ))}
+            </div>
+          </StepBlock>
+        )}
+
+        {stepKey === "autres-sports" && (
+          <StepBlock title="Pratiques-tu d'autres sports ?">
+            <div className="flex flex-col gap-3">
+              {autresSports.map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3"
+                >
+                  <span className="font-medium">{s.nom}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm text-foreground-muted">
+                      {s.frequenceParSemaine}x/semaine
+                    </span>
+                    <button
+                      onClick={() => setAutresSports((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="text-sm text-danger"
+                    >
+                      Retirer
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex flex-col gap-3 rounded-xl border border-dashed border-border p-4">
+                <input
+                  value={nouveauSportNom}
+                  onChange={(e) => setNouveauSportNom(e.target.value)}
+                  placeholder="Ex : Escalade"
+                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                />
+                <Stepper
+                  label="Fois par semaine"
+                  value={nouveauSportFreq}
+                  min={1}
+                  max={7}
+                  onChange={setNouveauSportFreq}
+                />
+                <Button
+                  variant="secondary"
+                  disabled={nouveauSportNom.trim().length === 0}
+                  onClick={ajouterSport}
+                >
+                  Ajouter ce sport
+                </Button>
+              </div>
             </div>
           </StepBlock>
         )}
@@ -172,11 +398,15 @@ export default function OnboardingPage() {
           <StepBlock title="Tes disponibilités">
             <div className="flex flex-col gap-6">
               <Stepper
-                label="Jours d'entraînement / semaine"
-                value={jours}
-                min={2}
-                max={6}
-                onChange={setJours}
+                label={
+                  autresSports.length > 0
+                    ? `Séances par semaine (au total, y compris ${autresSports.map((s) => s.nom).join(", ")})`
+                    : "Séances par semaine"
+                }
+                value={seancesEffectif}
+                min={plancherSeances}
+                max={14}
+                onChange={(v) => setSeances(Math.max(v, plancherSeances))}
               />
               <Stepper
                 label="Durée par séance (min)"
@@ -186,6 +416,19 @@ export default function OnboardingPage() {
                 step={15}
                 onChange={setDuree}
               />
+              {autresSports.length > 0 && (
+                <p className="text-xs text-foreground-muted">
+                  Sur ces {seancesEffectif} séances,{" "}
+                  {seancesHybrid > 1
+                    ? `${seancesHybrid} seront générées`
+                    : `${seancesHybrid} sera générée`}{" "}
+                  par ton coach IA — les{" "}
+                  {sommeAutresSports > 1
+                    ? `${sommeAutresSports} autres correspondent`
+                    : `${sommeAutresSports} autre correspond`}{" "}
+                  à tes séances de {autresSports.map((s) => s.nom).join(", ")}.
+                </p>
+              )}
             </div>
           </StepBlock>
         )}
@@ -280,64 +523,6 @@ function StepBlock({ title, children }: { title: string; children: React.ReactNo
     <div className="flex flex-col gap-5">
       <h1 className="text-2xl font-semibold">{title}</h1>
       {children}
-    </div>
-  );
-}
-
-function SelectCard({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-xl border px-4 py-3 text-left transition-colors ${
-        selected ? "border-accent bg-accent/10" : "border-border bg-surface"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function Stepper({
-  label,
-  value,
-  min,
-  max,
-  step = 1,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min: number;
-  max: number;
-  step?: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm text-foreground-muted">{label}</span>
-      <div className="flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
-        <button
-          onClick={() => onChange(Math.max(min, value - step))}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-lg"
-        >
-          −
-        </button>
-        <span className="text-lg font-semibold">{value}</span>
-        <button
-          onClick={() => onChange(Math.min(max, value + step))}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-muted text-lg"
-        >
-          +
-        </button>
-      </div>
     </div>
   );
 }

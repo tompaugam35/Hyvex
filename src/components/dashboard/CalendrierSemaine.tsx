@@ -1,51 +1,168 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { IntensiteBadge, QualiteBadge, StatutBadge } from "@/components/ui/Badge";
 import { qualiteInfo } from "@/lib/qualites";
 import { joursDeLaSemaineEnCours, estAujourdHui } from "@/lib/semaine";
 import { cn } from "@/lib/utils";
-import type { Seance } from "@/types";
+import type { AutreSportPlace, Seance } from "@/types";
+
+type TypeGlisse = "seance" | "sport";
+
+interface ApercuGlisse {
+  type: TypeGlisse;
+  id: string;
+  x: number;
+  y: number;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+}
+
+interface SuiviGlisse {
+  type: TypeGlisse;
+  id: string;
+  startX: number;
+  startY: number;
+  offsetX: number;
+  offsetY: number;
+  width: number;
+  enCours: boolean;
+}
+
+// Distance (px) avant qu'un appui soit considéré comme un glissement plutôt qu'un tap
+// (laisse les taps normaux — ouvrir une séance, toucher le ×) fonctionner sans interférence.
+const SEUIL_GLISSE = 6;
 
 export function CalendrierSemaine({
   seances,
+  autresSportsPlaces,
   onPlacer,
+  onPlacerAutreSport,
 }: {
   seances: Seance[];
+  autresSportsPlaces: AutreSportPlace[];
   onPlacer: (seanceId: string, jour: string | null) => void;
+  onPlacerAutreSport: (id: string, jour: string | null) => void;
 }) {
-  const [seanceSelectionneeId, setSeanceSelectionneeId] = useState<string | null>(null);
   const jours = joursDeLaSemaineEnCours();
-  const nonPlacees = seances.filter((s) => s.jour === null);
+  const seancesNonPlacees = seances.filter((s) => s.jour === null);
+  const sportsNonPlaces = autresSportsPlaces.filter((s) => s.jour === null);
+  const rienAPlacer = seancesNonPlacees.length === 0 && sportsNonPlaces.length === 0;
 
-  function choisirJour(jour: string) {
-    if (!seanceSelectionneeId) return;
-    onPlacer(seanceSelectionneeId, jour);
-    setSeanceSelectionneeId(null);
+  const [apercu, setApercu] = useState<ApercuGlisse | null>(null);
+  const [jourSurvole, setJourSurvole] = useState<string | null>(null);
+  const [bandeauSurvole, setBandeauSurvole] = useState(false);
+  const suiviRef = useRef<SuiviGlisse | null>(null);
+
+  function surDeplacement(e: PointerEvent) {
+    const suivi = suiviRef.current;
+    if (!suivi) return;
+
+    if (!suivi.enCours) {
+      const dx = e.clientX - suivi.startX;
+      const dy = e.clientY - suivi.startY;
+      if (Math.hypot(dx, dy) < SEUIL_GLISSE) return;
+      suivi.enCours = true;
+    }
+
+    e.preventDefault();
+    setApercu({
+      type: suivi.type,
+      id: suivi.id,
+      x: e.clientX,
+      y: e.clientY,
+      offsetX: suivi.offsetX,
+      offsetY: suivi.offsetY,
+      width: suivi.width,
+    });
+
+    const cible = document.elementFromPoint(e.clientX, e.clientY);
+    const jourEl = cible?.closest<HTMLElement>("[data-jour]");
+    setJourSurvole(jourEl?.dataset.jour ?? null);
+    setBandeauSurvole(!jourEl && !!cible?.closest("[data-bandeau]"));
   }
 
+  function surRelachement(e: PointerEvent) {
+    window.removeEventListener("pointermove", surDeplacement);
+    window.removeEventListener("pointerup", surRelachement);
+
+    const suivi = suiviRef.current;
+    suiviRef.current = null;
+
+    if (suivi?.enCours) {
+      const cible = document.elementFromPoint(e.clientX, e.clientY);
+      const jourEl = cible?.closest<HTMLElement>("[data-jour]");
+      const jour = jourEl?.dataset.jour;
+      if (jour) {
+        if (suivi.type === "seance") onPlacer(suivi.id, jour);
+        else onPlacerAutreSport(suivi.id, jour);
+      } else if (cible?.closest("[data-bandeau]")) {
+        if (suivi.type === "seance") onPlacer(suivi.id, null);
+        else onPlacerAutreSport(suivi.id, null);
+      }
+    }
+
+    setApercu(null);
+    setJourSurvole(null);
+    setBandeauSurvole(false);
+  }
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener("pointermove", surDeplacement);
+      window.removeEventListener("pointerup", surRelachement);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function demarrerGlisse(e: React.PointerEvent, type: TypeGlisse, id: string) {
+    if (e.button !== 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    suiviRef.current = {
+      type,
+      id,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: e.clientX - rect.left,
+      offsetY: e.clientY - rect.top,
+      width: rect.width,
+      enCours: false,
+    };
+    window.addEventListener("pointermove", surDeplacement);
+    window.addEventListener("pointerup", surRelachement);
+  }
+
+  const itemApercu = apercu
+    ? apercu.type === "seance"
+      ? seances.find((s) => s.id === apercu.id)
+      : autresSportsPlaces.find((s) => s.id === apercu.id)
+    : null;
+
   return (
-    <div className="flex flex-col gap-3">
-      {nonPlacees.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-xs text-foreground-muted">
-            {seanceSelectionneeId
-              ? "Touche un jour ci-dessous pour y placer la séance."
-              : "Touche une séance à placer, puis un jour du calendrier."}
-          </p>
+    <div className="flex select-none flex-col gap-3">
+      <div
+        data-bandeau="true"
+        className={cn(
+          "flex flex-col gap-2 rounded-2xl p-2 transition-colors",
+          bandeauSurvole && "border-2 border-dashed border-accent bg-accent/10"
+        )}
+      >
+        <p className="text-xs text-foreground-muted">
+          {rienAPlacer
+            ? "Glisse une séance ici pour la retirer du calendrier."
+            : "Glisse une séance vers un jour du calendrier pour la placer, ou ici pour la retirer."}
+        </p>
+        {!rienAPlacer && (
           <div className="flex gap-2 overflow-x-auto pb-1">
-            {nonPlacees.map((seance) => (
-              <button
+            {seancesNonPlacees.map((seance) => (
+              <div
                 key={seance.id}
-                onClick={() =>
-                  setSeanceSelectionneeId((id) => (id === seance.id ? null : seance.id))
-                }
+                onPointerDown={(e) => demarrerGlisse(e, "seance", seance.id)}
                 className={cn(
-                  "flex shrink-0 flex-col gap-1 rounded-xl border px-3 py-2 text-left transition-colors",
-                  seanceSelectionneeId === seance.id
-                    ? "border-accent bg-accent/10"
-                    : "border-border bg-surface"
+                  "flex shrink-0 touch-none select-none flex-col gap-1 rounded-xl border border-border bg-surface px-3 py-2 text-left transition-opacity",
+                  apercu?.type === "seance" && apercu.id === seance.id && "opacity-30"
                 )}
               >
                 <span className="flex items-center gap-1.5 text-xs font-medium">
@@ -58,23 +175,37 @@ export function CalendrierSemaine({
                 <span className="text-xs text-foreground-muted">
                   {seance.dureeEstimeeMinutes} min
                 </span>
-              </button>
+              </div>
+            ))}
+            {sportsNonPlaces.map((sport) => (
+              <div
+                key={sport.id}
+                onPointerDown={(e) => demarrerGlisse(e, "sport", sport.id)}
+                className={cn(
+                  "flex shrink-0 touch-none select-none items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2 text-left text-xs font-medium transition-opacity",
+                  apercu?.type === "sport" && apercu.id === sport.id && "opacity-30"
+                )}
+              >
+                <span className="h-2 w-2 shrink-0 rounded-full bg-foreground-muted" />
+                {sport.nom}
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex flex-col gap-2">
         {jours.map(({ nom, date }) => {
           const seancesJour = seances.filter((s) => s.jour === nom);
+          const sportsJour = autresSportsPlaces.filter((s) => s.jour === nom);
           return (
             <div
               key={nom}
-              onClick={() => choisirJour(nom)}
+              data-jour={nom}
               className={cn(
                 "flex flex-col gap-2 rounded-2xl border p-3 transition-colors",
-                seanceSelectionneeId
-                  ? "cursor-pointer border-dashed border-accent bg-accent/5"
+                jourSurvole === nom
+                  ? "border-dashed border-accent bg-accent/10"
                   : "border-border bg-surface"
               )}
             >
@@ -90,17 +221,25 @@ export function CalendrierSemaine({
                 )}
               </div>
 
-              {seancesJour.length === 0 ? (
+              {seancesJour.length === 0 && sportsJour.length === 0 ? (
                 <p className="text-xs text-foreground-muted">Aucune séance</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {seancesJour.map((seance) => (
                     <div
                       key={seance.id}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center justify-between gap-2 rounded-xl bg-surface-muted p-2.5"
+                      onPointerDown={(e) => demarrerGlisse(e, "seance", seance.id)}
+                      className={cn(
+                        "flex touch-none select-none items-center justify-between gap-2 rounded-xl bg-surface-muted p-2.5 transition-opacity",
+                        apercu?.type === "seance" && apercu.id === seance.id && "opacity-30"
+                      )}
                     >
-                      <Link href={`/seances/${seance.id}`} className="flex flex-1 flex-col gap-1.5">
+                      <Link
+                        href={`/seances/${seance.id}`}
+                        draggable={false}
+                        onDragStart={(e) => e.preventDefault()}
+                        className="flex flex-1 flex-col gap-1.5"
+                      >
                         <p className="text-sm font-medium">{seance.titre}</p>
                         <div className="flex flex-wrap items-center gap-1.5">
                           <QualiteBadge qualite={seance.qualite} />
@@ -113,6 +252,7 @@ export function CalendrierSemaine({
                       </Link>
                       {seance.statut === "a_venir" && (
                         <button
+                          onPointerDown={(e) => e.stopPropagation()}
                           onClick={() => onPlacer(seance.id, null)}
                           aria-label="Retirer du calendrier"
                           className="shrink-0 rounded-full p-1.5 text-foreground-muted hover:bg-border"
@@ -122,12 +262,48 @@ export function CalendrierSemaine({
                       )}
                     </div>
                   ))}
+                  {sportsJour.map((sport) => (
+                    <div
+                      key={sport.id}
+                      onPointerDown={(e) => demarrerGlisse(e, "sport", sport.id)}
+                      className={cn(
+                        "flex touch-none select-none items-center justify-between gap-2 rounded-xl border border-dashed border-border p-2.5 transition-opacity",
+                        apercu?.type === "sport" && apercu.id === sport.id && "opacity-30"
+                      )}
+                    >
+                      <span className="text-sm font-medium text-foreground-muted">{sport.nom}</span>
+                      <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => onPlacerAutreSport(sport.id, null)}
+                        aria-label="Retirer du calendrier"
+                        className="shrink-0 rounded-full p-1.5 text-foreground-muted hover:bg-border"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           );
         })}
       </div>
+
+      {apercu && itemApercu && (
+        <div
+          style={{
+            position: "fixed",
+            left: apercu.x - apercu.offsetX,
+            top: apercu.y - apercu.offsetY,
+            width: apercu.width,
+          }}
+          className="pointer-events-none z-50 rounded-xl border border-accent bg-surface px-3 py-2 text-sm font-medium shadow-lg"
+        >
+          {apercu.type === "seance"
+            ? (itemApercu as Seance).titre
+            : (itemApercu as AutreSportPlace).nom}
+        </div>
+      )}
     </div>
   );
 }

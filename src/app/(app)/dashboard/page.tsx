@@ -7,7 +7,7 @@ import { useProgramme } from "@/lib/use-programme";
 import { joursDeLaSemaineEnCours } from "@/lib/semaine";
 
 export default function DashboardPage() {
-  const { profil, programme, placerSeance } = useProgramme();
+  const { profil, programme, placerSeance, placerAutreSport } = useProgramme();
 
   if (!profil || !programme) return null;
 
@@ -65,7 +65,12 @@ export default function DashboardPage() {
 
       <section className="flex flex-col gap-3">
         <h3 className="text-sm font-semibold text-foreground-muted">Cette semaine</h3>
-        <CalendrierSemaine seances={programme.seances} onPlacer={placerSeance} />
+        <CalendrierSemaine
+          seances={programme.seances}
+          autresSportsPlaces={programme.autresSportsPlaces}
+          onPlacer={placerSeance}
+          onPlacerAutreSport={placerAutreSport}
+        />
       </section>
     </div>
   );

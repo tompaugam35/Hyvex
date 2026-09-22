@@ -2,12 +2,37 @@ export type Qualite = "course" | "muscu" | "explosivite";
 
 export type NiveauSportif = "debutant" | "intermediaire" | "avance";
 
+export interface AutreSport {
+  nom: string;
+  frequenceParSemaine: number;
+}
+
+// Niveau de performance actuel, saisi librement (ex: "22:30", "1h45", "80kg").
+// Tous les champs sont optionnels : plus l'athlète en renseigne, plus le programme
+// généré peut être calibré précisément.
+export interface PerformanceCourse {
+  temps5km?: string;
+  temps10km?: string;
+  temps21km?: string;
+}
+
+export interface PerformanceMuscu {
+  developpeCouche?: string;
+  souleveDeTerre?: string;
+  squat?: string;
+}
+
 export interface ProfilUtilisateur {
   id: string;
   prenom: string;
   niveau: NiveauSportif;
-  objectifs: Record<Qualite, number>; // pondération 0-100, somme = 100
-  joursDisponibles: number; // par semaine
+  qualitesPrioritaires: Qualite[]; // 1 à 3 qualités choisies ; longueur 3 = équilibre
+  performanceCourse: PerformanceCourse;
+  performanceMuscu: PerformanceMuscu;
+  objectifsTexte: Partial<Record<Qualite, string>>; // objectif libre par qualité choisie
+  autresSports: AutreSport[];
+  objectifs: Record<Qualite, number>; // pondération 0-100, dérivée de qualitesPrioritaires
+  seancesParSemaine: number; // total hebdo, autres sports inclus
   dureeSeanceMinutes: number;
   materiel: string[];
 }
@@ -61,11 +86,20 @@ export interface SeanceLog {
   terrain?: TerrainCourse;
 }
 
+// Repère visuel sur le calendrier pour un autre sport pratiqué (pas de détail de séance,
+// juste de quoi organiser sa semaine — le site ne planifie que les séances hybrid).
+export interface AutreSportPlace {
+  id: string;
+  nom: string;
+  jour: string | null;
+}
+
 export interface ProgrammeSemaine {
   id: string;
   numeroSemaine: number;
   dateDebut: string;
   seances: Seance[];
+  autresSportsPlaces: AutreSportPlace[];
 }
 
 export interface BilanHebdomadaire {

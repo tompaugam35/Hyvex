@@ -5,6 +5,15 @@ import {
   type ProgrammeGenere,
 } from "./schema";
 import { deplierEnveloppeUnique, depilerChampTableau } from "./normaliser";
+import {
+  decrireAutresSports,
+  decrireObjectifsTexte,
+  decrirePerformanceCourse,
+  decrirePerformanceMuscu,
+  decrirePriorite,
+  regleExclusionQualites,
+} from "./contexte";
+import { seancesHybrideDepuisTotal } from "./mapper";
 
 const MODEL = "claude-sonnet-5";
 
@@ -64,27 +73,29 @@ const niveauLabel: Record<ProfilInput["niveau"], string> = {
   avance: "avancé (s'entraîne sérieusement depuis plusieurs années)",
 };
 
-const prioriteLabel: Record<ProfilInput["priorite"], string> = {
-  course: "prioriser la course à pied (vitesse/endurance)",
-  muscu: "prioriser la musculation (force)",
-  explosivite: "prioriser l'explosivité (puissance, pliométrie)",
-  equilibre: "progresser de façon équilibrée sur les trois qualités",
-};
-
 function construirePrompt(profil: ProfilInput): string {
+  const seancesHybrid = seancesHybrideDepuisTotal(profil.seancesParSemaine, profil.autresSports);
+  const exclusion = regleExclusionQualites(profil.qualitesPrioritaires);
+
   return `Profil de l'athlète :
 - Prénom : ${profil.prenom}
 - Niveau : ${niveauLabel[profil.niveau]}
-- Priorité : ${prioriteLabel[profil.priorite]}
-- Disponibilité : ${profil.joursDisponibles} jours d'entraînement par semaine, environ ${profil.dureeSeanceMinutes} minutes par séance
+- Priorité : ${decrirePriorite(profil.qualitesPrioritaires)}
+- Niveau course à pied (temps réalisés) : ${decrirePerformanceCourse(profil.performanceCourse)}
+- Niveau musculation (charges actuelles) : ${decrirePerformanceMuscu(profil.performanceMuscu)}
+- Objectifs précis communiqués : ${decrireObjectifsTexte(profil.objectifsTexte)}
+- Autres sports pratiqués (hors app) : ${decrireAutresSports(profil.autresSports)}
+- Disponibilité totale : ${profil.seancesParSemaine} séances de sport par semaine, dont ${seancesHybrid} à générer ici (le reste correspond aux autres sports ci-dessus) ; environ ${profil.dureeSeanceMinutes} minutes par séance
 - Matériel disponible : ${profil.materiel.join(", ")}
 
 Génère le programme d'entraînement de la première semaine pour cet athlète hybride (course à pied + musculation + explosivité). L'athlète choisira lui-même quel jour placer chaque séance : ne les attribue donc pas à des jours précis. Contraintes :
-- Exactement ${profil.joursDisponibles} séances.
+- Exactement ${seancesHybrid} séances.
 - Chaque séance dure environ ${profil.dureeSeanceMinutes} minutes.
 - N'utilise que du matériel parmi : ${profil.materiel.join(", ")}.
 - Adapte le volume et l'intensité au niveau ${profil.niveau}.
-- Respecte la priorité indiquée tout en gardant un minimum des deux autres qualités physiques pour rester "hybride".
+- Si des temps de course ou des charges de musculation sont communiqués, calibre précisément les allures et les charges proposées sur ces données réelles plutôt que sur des estimations génériques liées au niveau.
+- Respecte la priorité indiquée et les objectifs précis communiqués.${exclusion ? `\n- ${exclusion}` : ""}
+- Si l'athlète pratique d'autres sports, tiens compte de la charge et de la fatigue que ça représente déjà (n'ajoute pas un volume hybrid qui, cumulé aux autres sports, deviendrait excessif).
 - Indique un niveau d'intensité (faible, modérée, élevée) cohérent pour chaque séance, pour que l'athlète puisse lui-même espacer les séances intenses en les plaçant dans la semaine.
 - Utilise le français pour tous les titres et noms d'exercices.
 

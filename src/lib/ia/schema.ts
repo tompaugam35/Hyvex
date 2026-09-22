@@ -1,17 +1,47 @@
 import { z } from "zod";
 
+const qualiteSchema = z.enum(["course", "muscu", "explosivite"]);
+
+export const autreSportSchema = z.object({
+  nom: z.string().min(1).max(40),
+  frequenceParSemaine: z.number().int().min(1).max(7),
+});
+
+// Objectif libre par qualité, toutes optionnelles (Partial<Record<Qualite, string>>) —
+// z.record() avec un enum de clés produirait un objet requis sur les trois clés.
+const objectifsTexteSchema = z.object({
+  course: z.string().optional(),
+  muscu: z.string().optional(),
+  explosivite: z.string().optional(),
+});
+
+// Niveau de performance actuel, saisi librement, tous champs optionnels.
+const performanceCourseSchema = z.object({
+  temps5km: z.string().optional(),
+  temps10km: z.string().optional(),
+  temps21km: z.string().optional(),
+});
+
+const performanceMuscuSchema = z.object({
+  developpeCouche: z.string().optional(),
+  souleveDeTerre: z.string().optional(),
+  squat: z.string().optional(),
+});
+
 export const profilInputSchema = z.object({
   prenom: z.string().min(1).max(50),
   niveau: z.enum(["debutant", "intermediaire", "avance"]),
-  priorite: z.enum(["course", "muscu", "explosivite", "equilibre"]),
-  joursDisponibles: z.number().int().min(2).max(6),
+  qualitesPrioritaires: z.array(qualiteSchema).min(1).max(3),
+  performanceCourse: performanceCourseSchema.default({}),
+  performanceMuscu: performanceMuscuSchema.default({}),
+  objectifsTexte: objectifsTexteSchema.default({}),
+  autresSports: z.array(autreSportSchema).max(5).default([]),
+  seancesParSemaine: z.number().int().min(2).max(14),
   dureeSeanceMinutes: z.number().int().min(30).max(90),
   materiel: z.array(z.string()).min(1),
 });
 
 export type ProfilInput = z.infer<typeof profilInputSchema>;
-
-const qualiteSchema = z.enum(["course", "muscu", "explosivite"]);
 
 export const exerciceGenereSchema = z.object({
   nom: z.string(),
@@ -44,8 +74,13 @@ const difficulteSchema = z.enum(["facile", "parfait", "difficile"]);
 export const profilCompletSchema = z.object({
   prenom: z.string().min(1).max(50),
   niveau: z.enum(["debutant", "intermediaire", "avance"]),
+  qualitesPrioritaires: z.array(qualiteSchema).min(1).max(3),
+  performanceCourse: performanceCourseSchema.default({}),
+  performanceMuscu: performanceMuscuSchema.default({}),
+  objectifsTexte: objectifsTexteSchema.default({}),
+  autresSports: z.array(autreSportSchema).default([]),
   objectifs: z.record(qualiteSchema, z.number()),
-  joursDisponibles: z.number().int(),
+  seancesParSemaine: z.number().int(),
   dureeSeanceMinutes: z.number().int(),
   materiel: z.array(z.string()),
 });

@@ -11,6 +11,8 @@ import type {
 import { creerClientNavigateur } from "./supabase/client";
 import { versProfil, versProgramme } from "./supabase/mappers";
 import { jourDepuisDate } from "./semaine";
+import { objectifsDepuisQualites } from "./ia/mapper";
+import type { ProfilInput } from "./ia/schema";
 
 interface EtatProgramme {
   userId: string | null;
@@ -126,12 +128,85 @@ export function useProgramme() {
       .eq("user_id", actuel.userId);
   }, []);
 
+  const mettreAJourProfil = useCallback(async (input: ProfilInput) => {
+    const actuel = etatRef.current;
+    if (!actuel.userId) return;
+
+    const nouveauProfil: ProfilUtilisateur = {
+      id: actuel.userId,
+      prenom: input.prenom,
+      niveau: input.niveau,
+      qualitesPrioritaires: input.qualitesPrioritaires,
+      performanceCourse: input.performanceCourse,
+      performanceMuscu: input.performanceMuscu,
+      objectifsTexte: input.objectifsTexte,
+      autresSports: input.autresSports,
+      objectifs: objectifsDepuisQualites(input.qualitesPrioritaires),
+      seancesParSemaine: input.seancesParSemaine,
+      dureeSeanceMinutes: input.dureeSeanceMinutes,
+      materiel: input.materiel,
+    };
+
+    const supabase = creerClientNavigateur();
+    const { data, error } = await supabase
+      .from("profils")
+      .update({
+        prenom: nouveauProfil.prenom,
+        niveau: nouveauProfil.niveau,
+        qualites_prioritaires: nouveauProfil.qualitesPrioritaires,
+        performance_course: nouveauProfil.performanceCourse,
+        performance_muscu: nouveauProfil.performanceMuscu,
+        objectifs_texte: nouveauProfil.objectifsTexte,
+        autres_sports: nouveauProfil.autresSports,
+        objectifs: nouveauProfil.objectifs,
+        seances_par_semaine: nouveauProfil.seancesParSemaine,
+        duree_seance_minutes: nouveauProfil.dureeSeanceMinutes,
+        materiel: nouveauProfil.materiel,
+      })
+      .eq("user_id", actuel.userId)
+      .select("user_id");
+
+    // On ne met à jour l'état local qu'après confirmation de l'écriture : sinon un
+    // échec silencieux de Supabase laisse croire que la modification a été prise en
+    // compte alors qu'elle sera perdue au prochain rechargement. Une erreur Postgres
+    // n'est renvoyée que si la requête est invalide : si le filtre user_id ne
+    // correspond à aucune ligne (RLS ou incohérence), .update() "réussit" quand même
+    // avec 0 ligne modifiée — on le détecte via .select() pour ne pas se faire piéger.
+    if (error) throw new Error(error.message);
+    if (!data || data.length === 0) {
+      throw new Error("Aucune ligne de profil mise à jour (user_id introuvable).");
+    }
+
+    setEtat((prev) => ({ ...prev, profil: nouveauProfil }));
+  }, []);
+
+  const placerAutreSport = useCallback(async (id: string, jour: string | null) => {
+    const actuel = etatRef.current;
+    if (!actuel.programme || !actuel.userId) return;
+
+    const autresSportsPlaces = actuel.programme.autresSportsPlaces.map((s) =>
+      s.id === id ? { ...s, jour } : s
+    );
+
+    setEtat((prev) =>
+      prev.programme ? { ...prev, programme: { ...prev.programme, autresSportsPlaces } } : prev
+    );
+
+    const supabase = creerClientNavigateur();
+    await supabase
+      .from("programmes")
+      .update({ autres_sports_places: autresSportsPlaces, updated_at: new Date().toISOString() })
+      .eq("user_id", actuel.userId);
+  }, []);
+
   return {
     profil: etat.profil,
     programme: etat.programme,
     dernierBilan: etat.dernierBilan,
     enregistrerRetourSeance,
     placerSeance,
+    placerAutreSport,
+    mettreAJourProfil,
     rafraichir,
     charge,
   };

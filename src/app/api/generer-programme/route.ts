@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { profilInputSchema } from "@/lib/ia/schema";
 import { genererProgrammeIA } from "@/lib/ia/generer-programme";
-import { versProgrammeSemaine, objectifsDepuisPriorite } from "@/lib/ia/mapper";
+import {
+  versProgrammeSemaine,
+  objectifsDepuisQualites,
+  genererAutresSportsPlaces,
+} from "@/lib/ia/mapper";
 import { creerClientServeur } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -26,14 +30,20 @@ export async function POST(request: Request) {
 
   try {
     const genere = await genererProgrammeIA(parsed.data);
-    const programme = versProgrammeSemaine(genere);
+    const autresSportsPlaces = genererAutresSportsPlaces(parsed.data.autresSports);
+    const programme = versProgrammeSemaine(genere, autresSportsPlaces);
 
     const { error: erreurProfil } = await supabase.from("profils").upsert({
       user_id: user.id,
       prenom: parsed.data.prenom,
       niveau: parsed.data.niveau,
-      objectifs: objectifsDepuisPriorite(parsed.data.priorite),
-      jours_disponibles: parsed.data.joursDisponibles,
+      qualites_prioritaires: parsed.data.qualitesPrioritaires,
+      performance_course: parsed.data.performanceCourse,
+      performance_muscu: parsed.data.performanceMuscu,
+      objectifs_texte: parsed.data.objectifsTexte,
+      autres_sports: parsed.data.autresSports,
+      objectifs: objectifsDepuisQualites(parsed.data.qualitesPrioritaires),
+      seances_par_semaine: parsed.data.seancesParSemaine,
       duree_seance_minutes: parsed.data.dureeSeanceMinutes,
       materiel: parsed.data.materiel,
     });
@@ -45,6 +55,7 @@ export async function POST(request: Request) {
       numero_semaine: programme.numeroSemaine,
       date_debut: programme.dateDebut,
       seances: programme.seances,
+      autres_sports_places: programme.autresSportsPlaces,
       dernier_bilan: null,
       updated_at: new Date().toISOString(),
     });

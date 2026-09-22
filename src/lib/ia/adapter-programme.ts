@@ -9,6 +9,15 @@ import {
   type AdapterRequest,
   type BilanEtProgramme,
 } from "./schema";
+import {
+  decrireAutresSports,
+  decrireObjectifsTexte,
+  decrirePerformanceCourse,
+  decrirePerformanceMuscu,
+  decrirePriorite,
+  regleExclusionQualites,
+} from "./contexte";
+import { seancesHybrideDepuisTotal } from "./mapper";
 
 const MODEL = "claude-sonnet-5";
 
@@ -150,11 +159,19 @@ function construirePrompt(requete: AdapterRequest): string {
     .map((s) => decrireSeance(s, logs))
     .join("\n");
 
+  const seancesHybrid = seancesHybrideDepuisTotal(profil.seancesParSemaine, profil.autresSports);
+  const exclusion = regleExclusionQualites(profil.qualitesPrioritaires);
+
   return `Profil de l'athlète :
 - Prénom : ${profil.prenom}
 - Niveau : ${niveauLabel[profil.niveau]}
+- Priorité : ${decrirePriorite(profil.qualitesPrioritaires)}
+- Niveau course à pied (temps réalisés) : ${decrirePerformanceCourse(profil.performanceCourse)}
+- Niveau musculation (charges actuelles) : ${decrirePerformanceMuscu(profil.performanceMuscu)}
+- Objectifs précis communiqués : ${decrireObjectifsTexte(profil.objectifsTexte)}
+- Autres sports pratiqués (hors app) : ${decrireAutresSports(profil.autresSports)}
 - Objectifs (pondération) : ${profil.objectifs.course}% course, ${profil.objectifs.muscu}% muscu, ${profil.objectifs.explosivite}% explosivité
-- Disponibilité : ${profil.joursDisponibles} jours/semaine, environ ${profil.dureeSeanceMinutes} minutes par séance
+- Disponibilité totale : ${profil.seancesParSemaine} séances de sport par semaine, dont ${seancesHybrid} à générer ici ; environ ${profil.dureeSeanceMinutes} minutes par séance
 - Matériel disponible : ${profil.materiel.join(", ")}
 
 Bilan de la semaine ${numeroSemainePrecedente} :
@@ -164,7 +181,9 @@ Analyse cette semaine et génère le programme de la semaine ${numeroSemainePrec
 - Pour la musculation et l'explosivité, ajuste charges/volumes/exercices en te basant sur le RPE, la fatigue et la difficulté par exercice (ex : si plusieurs exercices étaient "trop facile" et le RPE bas, augmente la charge ou le volume ; si "trop difficile" ou RPE/fatigue élevés, allège ou stabilise).
 - Pour la course, ajuste distance/allure/dénivelé en te basant sur le ressenti, l'allure réelle et le terrain communiqués (ex : ressenti bas avec allure rapide → tu peux augmenter légèrement le volume ou l'intensité ; ressenti élevé ou allure en difficulté → stabilise ou allège). Si aucune donnée n'est disponible pour une séance réalisée, garde un volume prudent et stable.
 - Une séance "non réalisée" ne doit pas être ignorée : réduis légèrement la charge globale ou adapte la répartition plutôt que d'accumuler le volume manqué.
-- Respecte toujours ${profil.joursDisponibles} séances, ~${profil.dureeSeanceMinutes} minutes chacune, avec le matériel disponible.
+- Si des temps de course ou des charges de musculation sont communiqués, calibre précisément les allures et les charges proposées sur ces données réelles plutôt que sur des estimations génériques.
+- Si l'athlète pratique d'autres sports, tiens compte de la charge et de la fatigue que ça représente déjà.${exclusion ? `\n- ${exclusion}` : ""}
+- Respecte toujours ${seancesHybrid} séances, ~${profil.dureeSeanceMinutes} minutes chacune, avec le matériel disponible.
 - L'athlète choisira lui-même quel jour placer chaque séance : ne les attribue pas à des jours précis, mais indique un niveau d'intensité (faible, modérée, élevée) cohérent pour chacune, pour qu'il puisse les espacer correctement.
 - Les constats et ajustements doivent être courts, concrets et directement liés aux données ci-dessus (pas de généralités).
 - Utilise le français pour tout.

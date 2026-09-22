@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { creerClientServeur } from "@/lib/supabase/server";
 import { versProfil, versProgramme, versJournalEntree } from "@/lib/supabase/mappers";
 import { adapterProgrammeIA } from "@/lib/ia/adapter-programme";
-import { versProgrammeSemaine, calculerChargeParQualite } from "@/lib/ia/mapper";
+import {
+  versProgrammeSemaine,
+  calculerChargeParQualite,
+  genererAutresSportsPlaces,
+} from "@/lib/ia/mapper";
 import type { BilanHebdomadaire } from "@/types";
 
 export async function POST() {
@@ -65,6 +69,7 @@ export async function POST() {
 
     const programme = versProgrammeSemaine(
       { seances: resultat.seances },
+      genererAutresSportsPlaces(profil.autresSports),
       programmePrecedent.numeroSemaine + 1
     );
 
@@ -99,6 +104,7 @@ export async function POST() {
         numero_semaine: programme.numeroSemaine,
         date_debut: programme.dateDebut,
         seances: programme.seances,
+        autres_sports_places: programme.autresSportsPlaces,
         dernier_bilan: bilan,
         updated_at: new Date().toISOString(),
       })

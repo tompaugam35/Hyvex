@@ -5,8 +5,13 @@ create table if not exists public.profils (
   user_id uuid primary key references auth.users (id) on delete cascade,
   prenom text not null,
   niveau text not null,
+  qualites_prioritaires jsonb not null default '[]',
+  performance_course jsonb not null default '{}',
+  performance_muscu jsonb not null default '{}',
+  objectifs_texte jsonb not null default '{}',
+  autres_sports jsonb not null default '[]',
   objectifs jsonb not null,
-  jours_disponibles integer not null,
+  seances_par_semaine integer not null,
   duree_seance_minutes integer not null,
   materiel jsonb not null,
   created_at timestamptz not null default now()
@@ -18,6 +23,7 @@ create table if not exists public.programmes (
   numero_semaine integer not null,
   date_debut date not null,
   seances jsonb not null,
+  autres_sports_places jsonb not null default '[]',
   dernier_bilan jsonb,
   updated_at timestamptz not null default now()
 );

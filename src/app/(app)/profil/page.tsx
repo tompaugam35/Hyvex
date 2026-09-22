@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ModifierProfilPanel } from "@/components/profil/ModifierProfilPanel";
 import { useProgramme } from "@/lib/use-programme";
-import { useStrava } from "@/lib/use-strava";
 import { creerClientNavigateur } from "@/lib/supabase/client";
+import { qualiteLabelLong } from "@/lib/quiz-options";
 
 const niveauLabel = {
   debutant: "Débutant",
@@ -15,20 +16,9 @@ const niveauLabel = {
 };
 
 export default function ProfilPage() {
-  const { profil } = useProgramme();
-  const { connecte, charge: chargeStrava, synchroEnCours, connecter, synchroniser } = useStrava();
+  const { profil, mettreAJourProfil } = useProgramme();
   const router = useRouter();
-  const [statutStrava, setStatutStrava] = useState<string | null>(null);
-
-  useEffect(() => {
-    const valeur = new URLSearchParams(window.location.search).get("strava");
-    if (valeur) {
-      // Lecture ponctuelle du paramètre de retour Strava, puis nettoyage de l'URL.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStatutStrava(valeur);
-      router.replace("/profil");
-    }
-  }, [router]);
+  const [modificationOuverte, setModificationOuverte] = useState(false);
 
   if (!profil) return null;
 
@@ -54,15 +44,31 @@ export default function ProfilPage() {
 
       <Card className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-foreground-muted">Objectifs</span>
+          <span className="text-sm text-foreground-muted">Progression</span>
+          <span className="text-sm">
+            {profil.qualitesPrioritaires.length === 3
+              ? "Les trois qualités"
+              : profil.qualitesPrioritaires.map((q) => qualiteLabelLong[q]).join(" + ")}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-foreground-muted">Pondération</span>
           <span className="text-sm">
             {profil.objectifs.course}% course · {profil.objectifs.muscu}% muscu ·{" "}
             {profil.objectifs.explosivite}% explosivité
           </span>
         </div>
+        {profil.autresSports.length > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-foreground-muted">Autres sports</span>
+            <span className="text-sm">
+              {profil.autresSports.map((s) => `${s.nom} (${s.frequenceParSemaine}x)`).join(", ")}
+            </span>
+          </div>
+        )}
         <div className="flex items-center justify-between">
           <span className="text-sm text-foreground-muted">Disponibilité</span>
-          <span className="text-sm">{profil.joursDisponibles} jours / semaine</span>
+          <span className="text-sm">{profil.seancesParSemaine} séances / semaine</span>
         </div>
         <div className="flex items-center justify-between">
           <span className="text-sm text-foreground-muted">Durée par séance</span>
@@ -74,47 +80,23 @@ export default function ProfilPage() {
         </div>
       </Card>
 
-      <Card className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">Strava</span>
-          {chargeStrava && (
-            <span
-              className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-                connecte
-                  ? "bg-running/15 text-running"
-                  : "bg-surface-muted text-foreground-muted"
-              }`}
-            >
-              {connecte ? "Connecté" : "Non connecté"}
-            </span>
-          )}
-        </div>
-        {statutStrava === "connecte" && (
-          <p className="text-sm text-running">
-            Compte Strava connecté, tes dernières courses ont été importées.
-          </p>
-        )}
-        {statutStrava === "erreur" && (
-          <p className="text-sm text-danger">La connexion à Strava a échoué, réessaie.</p>
-        )}
-        {statutStrava === "refuse" && (
-          <p className="text-sm text-foreground-muted">Connexion Strava annulée.</p>
-        )}
-        {connecte ? (
-          <Button variant="secondary" onClick={synchroniser} disabled={synchroEnCours}>
-            {synchroEnCours ? "Synchronisation..." : "Synchroniser mes courses"}
-          </Button>
-        ) : (
-          <Button variant="secondary" onClick={connecter}>
-            Connecter Strava
-          </Button>
-        )}
-      </Card>
-
-      <Button variant="secondary">Modifier mes objectifs et disponibilités</Button>
+      <Button variant="secondary" onClick={() => setModificationOuverte(true)}>
+        Modifier mes objectifs et disponibilités
+      </Button>
       <Button variant="ghost" className="text-danger" onClick={seDeconnecter}>
         Se déconnecter
       </Button>
+
+      {modificationOuverte && (
+        <ModifierProfilPanel
+          profil={profil}
+          onFermer={() => setModificationOuverte(false)}
+          onEnregistrer={async (input) => {
+            await mettreAJourProfil(input);
+            setModificationOuverte(false);
+          }}
+        />
+      )}
     </div>
   );
 }

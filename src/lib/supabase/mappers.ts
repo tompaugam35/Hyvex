@@ -12,8 +12,13 @@ export interface LigneProfil {
   user_id: string;
   prenom: string;
   niveau: string;
+  qualites_prioritaires: string[] | null;
+  performance_course: Record<string, string> | null;
+  performance_muscu: Record<string, string> | null;
+  objectifs_texte: Record<string, string> | null;
+  autres_sports: { nom: string; frequenceParSemaine: number }[] | null;
   objectifs: Record<string, number>;
-  jours_disponibles: number;
+  seances_par_semaine: number;
   duree_seance_minutes: number;
   materiel: string[];
 }
@@ -24,6 +29,7 @@ export interface LigneProgramme {
   numero_semaine: number;
   date_debut: string;
   seances: unknown;
+  autres_sports_places: unknown;
   dernier_bilan: unknown;
 }
 
@@ -59,8 +65,14 @@ export function versProfil(ligne: LigneProfil): ProfilUtilisateur {
     id: ligne.user_id,
     prenom: ligne.prenom,
     niveau: ligne.niveau as ProfilUtilisateur["niveau"],
+    qualitesPrioritaires:
+      (ligne.qualites_prioritaires as ProfilUtilisateur["qualitesPrioritaires"]) ?? [],
+    performanceCourse: (ligne.performance_course as ProfilUtilisateur["performanceCourse"]) ?? {},
+    performanceMuscu: (ligne.performance_muscu as ProfilUtilisateur["performanceMuscu"]) ?? {},
+    objectifsTexte: (ligne.objectifs_texte as ProfilUtilisateur["objectifsTexte"]) ?? {},
+    autresSports: ligne.autres_sports ?? [],
     objectifs: ligne.objectifs as ProfilUtilisateur["objectifs"],
-    joursDisponibles: ligne.jours_disponibles,
+    seancesParSemaine: ligne.seances_par_semaine,
     dureeSeanceMinutes: ligne.duree_seance_minutes,
     materiel: ligne.materiel,
   };
@@ -72,6 +84,7 @@ export function versProgramme(ligne: LigneProgramme): ProgrammeSemaine {
     numeroSemaine: ligne.numero_semaine,
     dateDebut: ligne.date_debut,
     seances: ligne.seances as ProgrammeSemaine["seances"],
+    autresSportsPlaces: (ligne.autres_sports_places as ProgrammeSemaine["autresSportsPlaces"]) ?? [],
   };
 }
 
