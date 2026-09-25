@@ -31,6 +31,9 @@ const performanceMuscuSchema = z.object({
 export const profilInputSchema = z.object({
   prenom: z.string().min(1).max(50),
   niveau: z.enum(["debutant", "intermediaire", "avance"]),
+  tailleCm: z.number().int().min(100).max(250).optional(),
+  poidsKg: z.number().min(30).max(300).optional(),
+  poidsObjectifKg: z.number().min(30).max(300).optional(),
   qualitesPrioritaires: z.array(qualiteSchema).min(1).max(3),
   performanceCourse: performanceCourseSchema.default({}),
   performanceMuscu: performanceMuscuSchema.default({}),
@@ -74,6 +77,9 @@ const difficulteSchema = z.enum(["facile", "parfait", "difficile"]);
 export const profilCompletSchema = z.object({
   prenom: z.string().min(1).max(50),
   niveau: z.enum(["debutant", "intermediaire", "avance"]),
+  tailleCm: z.number().int().min(100).max(250).optional(),
+  poidsKg: z.number().min(30).max(300).optional(),
+  poidsObjectifKg: z.number().min(30).max(300).optional(),
   qualitesPrioritaires: z.array(qualiteSchema).min(1).max(3),
   performanceCourse: performanceCourseSchema.default({}),
   performanceMuscu: performanceMuscuSchema.default({}),
@@ -142,5 +148,24 @@ export const bilanEtProgrammeSchema = z.object({
   ajustements: z.array(z.string()).min(1).max(5),
   seances: z.array(seanceGenereeSchema).min(1),
 });
+
+export const repasAnalyseSchema = z.object({
+  titre: z.string().min(1).max(80),
+  calories: z.number().min(0).max(5000),
+  proteinesG: z.number().min(0).max(500),
+  glucidesG: z.number().min(0).max(500),
+  lipidesG: z.number().min(0).max(500),
+});
+
+export type RepasAnalyse = z.infer<typeof repasAnalyseSchema>;
+
+export const objectifsNutritionSchema = z.object({
+  calories: z.number().min(800).max(6000),
+  proteinesG: z.number().min(0).max(500),
+  glucidesG: z.number().min(0).max(800),
+  lipidesG: z.number().min(0).max(300),
+});
+
+export type ObjectifsNutrition = z.infer<typeof objectifsNutritionSchema>;
 
 export type BilanEtProgramme = z.infer<typeof bilanEtProgrammeSchema>;

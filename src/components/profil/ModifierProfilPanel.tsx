@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { SelectCard } from "@/components/ui/SelectCard";
 import { Stepper } from "@/components/ui/Stepper";
+import { ChampNombre } from "@/components/ui/ChampNombre";
 import {
   niveaux,
   qualiteOptions,
@@ -25,6 +26,11 @@ export function ModifierProfilPanel({
 }) {
   const [prenom, setPrenom] = useState(profil.prenom);
   const [niveau, setNiveau] = useState(profil.niveau);
+  const [tailleCm, setTailleCm] = useState<number | undefined>(profil.tailleCm);
+  const [poidsKg, setPoidsKg] = useState<number | undefined>(profil.poidsKg);
+  const [poidsObjectifKg, setPoidsObjectifKg] = useState<number | undefined>(
+    profil.poidsObjectifKg
+  );
   const [qualites, setQualites] = useState<Qualite[]>(profil.qualitesPrioritaires);
   const [performanceCourse, setPerformanceCourse] = useState<PerformanceCourse>(
     profil.performanceCourse
@@ -84,6 +90,9 @@ export function ModifierProfilPanel({
       await onEnregistrer({
         prenom: prenom.trim(),
         niveau,
+        tailleCm,
+        poidsKg,
+        poidsObjectifKg,
         qualitesPrioritaires: qualites,
         performanceCourse,
         performanceMuscu,
@@ -127,6 +136,26 @@ export function ModifierProfilPanel({
                   <p className="text-sm text-foreground-muted">{n.desc}</p>
                 </SelectCard>
               ))}
+            </div>
+          </Question>
+
+          <Question title="Taille et poids">
+            <div className="flex flex-col gap-4">
+              <ChampNombre
+                label="Taille"
+                value={tailleCm}
+                onChange={setTailleCm}
+                unite="cm"
+                placeholder="Optionnel — ex : 178"
+              />
+              <ChampNombre
+                label="Poids"
+                value={poidsKg}
+                onChange={setPoidsKg}
+                unite="kg"
+                placeholder="Optionnel — ex : 72"
+                decimales
+              />
             </div>
           </Question>
 
@@ -359,6 +388,21 @@ export function ModifierProfilPanel({
                 </button>
               ))}
             </div>
+          </Question>
+
+          <Question title="Objectif de poids">
+            <ChampNombre
+              label="Poids souhaité"
+              value={poidsObjectifKg}
+              onChange={setPoidsObjectifKg}
+              unite="kg"
+              placeholder="Optionnel — ex : 70"
+              decimales
+            />
+            <p className="mt-2 text-xs text-foreground-muted">
+              Utilisé pour recalculer tes objectifs quotidiens de calories et de macronutriments
+              sur la page Calories.
+            </p>
           </Question>
 
           <p className="text-xs text-foreground-muted">

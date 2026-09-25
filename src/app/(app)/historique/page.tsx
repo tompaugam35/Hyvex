@@ -1,8 +1,8 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
-import { ProgressBar } from "@/components/ui/ProgressBar";
 import { GraphiqueMensuel } from "@/components/historique/GraphiqueMensuel";
+import { BilanPrecedent } from "@/components/historique/BilanPrecedent";
 import { qualiteInfo } from "@/lib/qualites";
 import { useHistorique } from "@/lib/use-historique";
 import type { JournalEntree, Qualite, TerrainCourse } from "@/types";
@@ -68,31 +68,18 @@ export default function HistoriquePage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h3 className="text-sm font-semibold text-foreground-muted">Dernières semaines</h3>
-        {charge && semaines.length === 0 && (
-          <Card>
-            <p className="text-sm text-foreground-muted">
-              Ton historique de semaines apparaîtra ici après ton premier bilan.
-            </p>
-          </Card>
-        )}
-        <div className="flex flex-col gap-3">
-          {semaines.map((s) => (
-            <Card key={s.numeroSemaine} className="flex items-center justify-between">
-              <span className="font-medium">Semaine {s.numeroSemaine}</span>
-              <div className="flex items-center gap-3">
-                <div className="w-28">
-                  <ProgressBar
-                    value={(s.nbSeancesTerminees / s.nbSeancesPrevues) * 100}
-                  />
-                </div>
-                <span className="w-14 text-right text-sm text-foreground-muted">
-                  {s.nbSeancesTerminees}/{s.nbSeancesPrevues}
-                </span>
-              </div>
+        <h3 className="text-sm font-semibold text-foreground-muted">Bilan précédent</h3>
+        {semaines.length > 0 ? (
+          <BilanPrecedent semaine={semaines[0]} />
+        ) : (
+          charge && (
+            <Card>
+              <p className="text-sm text-foreground-muted">
+                Ton bilan de semaine apparaîtra ici après ta première génération.
+              </p>
             </Card>
-          ))}
-        </div>
+          )
+        )}
       </section>
 
       <section className="flex flex-col gap-3">

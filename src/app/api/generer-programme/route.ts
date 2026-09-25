@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { profilInputSchema } from "@/lib/ia/schema";
 import { genererProgrammeIA } from "@/lib/ia/generer-programme";
+import { calculerObjectifsNutritionIA } from "@/lib/ia/calculer-objectifs-nutrition";
 import {
   versProgrammeSemaine,
   objectifsDepuisQualites,
@@ -29,7 +30,18 @@ export async function POST(request: Request) {
   }
 
   try {
-    const genere = await genererProgrammeIA(parsed.data);
+    const [genere, objectifsNutrition] = await Promise.all([
+      genererProgrammeIA(parsed.data),
+      parsed.data.poidsObjectifKg !== undefined
+        ? calculerObjectifsNutritionIA({
+            niveau: parsed.data.niveau,
+            tailleCm: parsed.data.tailleCm,
+            poidsKg: parsed.data.poidsKg,
+            poidsObjectifKg: parsed.data.poidsObjectifKg,
+            seancesParSemaine: parsed.data.seancesParSemaine,
+          })
+        : Promise.resolve(null),
+    ]);
     const autresSportsPlaces = genererAutresSportsPlaces(parsed.data.autresSports);
     const programme = versProgrammeSemaine(genere, autresSportsPlaces);
 
@@ -37,6 +49,13 @@ export async function POST(request: Request) {
       user_id: user.id,
       prenom: parsed.data.prenom,
       niveau: parsed.data.niveau,
+      taille_cm: parsed.data.tailleCm ?? null,
+      poids_kg: parsed.data.poidsKg ?? null,
+      poids_objectif_kg: parsed.data.poidsObjectifKg ?? null,
+      objectif_calories: objectifsNutrition ? Math.round(objectifsNutrition.calories) : null,
+      objectif_proteines_g: objectifsNutrition?.proteinesG ?? null,
+      objectif_glucides_g: objectifsNutrition?.glucidesG ?? null,
+      objectif_lipides_g: objectifsNutrition?.lipidesG ?? null,
       qualites_prioritaires: parsed.data.qualitesPrioritaires,
       performance_course: parsed.data.performanceCourse,
       performance_muscu: parsed.data.performanceMuscu,
@@ -64,6 +83,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ programme });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erreur inconnue";
+    console.error("[/api/generer-programme] échec :", error);
     return NextResponse.json({ erreur: message }, { status: 502 });
   }
 }

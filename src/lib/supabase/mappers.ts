@@ -3,6 +3,7 @@ import type {
   JournalEntree,
   ProfilUtilisateur,
   ProgrammeSemaine,
+  Repas,
   SemaineHistorique,
 } from "@/types";
 
@@ -12,6 +13,15 @@ export interface LigneProfil {
   user_id: string;
   prenom: string;
   niveau: string;
+  taille_cm: number | null;
+  poids_kg: number | null;
+  poids_objectif_kg: number | null;
+  dernier_bilan_mensuel_vu: string | null;
+  photo_url: string | null;
+  objectif_calories: number | null;
+  objectif_proteines_g: number | null;
+  objectif_glucides_g: number | null;
+  objectif_lipides_g: number | null;
   qualites_prioritaires: string[] | null;
   performance_course: Record<string, string> | null;
   performance_muscu: Record<string, string> | null;
@@ -50,6 +60,7 @@ export interface LigneJournalEntree {
   duree_secondes: number | null;
   denivele_metres: number | null;
   terrain: string | null;
+  duree_estimee_minutes: number | null;
 }
 
 export interface LigneSemaineHistorique {
@@ -60,11 +71,39 @@ export interface LigneSemaineHistorique {
   bilan: unknown;
 }
 
+export interface LigneRepas {
+  id: string;
+  created_at: string;
+  titre: string;
+  calories: number;
+  proteines_g: number;
+  glucides_g: number;
+  lipides_g: number;
+  photo: string | null;
+}
+
 export function versProfil(ligne: LigneProfil): ProfilUtilisateur {
   return {
     id: ligne.user_id,
     prenom: ligne.prenom,
     niveau: ligne.niveau as ProfilUtilisateur["niveau"],
+    tailleCm: ligne.taille_cm ?? undefined,
+    poidsKg: ligne.poids_kg ?? undefined,
+    poidsObjectifKg: ligne.poids_objectif_kg ?? undefined,
+    dernierBilanMensuelVu: ligne.dernier_bilan_mensuel_vu ?? undefined,
+    photoUrl: ligne.photo_url ?? undefined,
+    objectifsNutrition:
+      ligne.objectif_calories !== null &&
+      ligne.objectif_proteines_g !== null &&
+      ligne.objectif_glucides_g !== null &&
+      ligne.objectif_lipides_g !== null
+        ? {
+            calories: ligne.objectif_calories,
+            proteinesG: ligne.objectif_proteines_g,
+            glucidesG: ligne.objectif_glucides_g,
+            lipidesG: ligne.objectif_lipides_g,
+          }
+        : undefined,
     qualitesPrioritaires:
       (ligne.qualites_prioritaires as ProfilUtilisateur["qualitesPrioritaires"]) ?? [],
     performanceCourse: (ligne.performance_course as ProfilUtilisateur["performanceCourse"]) ?? {},
@@ -106,6 +145,7 @@ export function versJournalEntree(ligne: LigneJournalEntree): JournalEntree {
     dureeSecondes: ligne.duree_secondes ?? undefined,
     deniveleMetres: ligne.denivele_metres ?? undefined,
     terrain: (ligne.terrain as JournalEntree["terrain"]) ?? undefined,
+    dureeEstimeeMinutes: ligne.duree_estimee_minutes ?? undefined,
   };
 }
 
@@ -116,5 +156,18 @@ export function versSemaineHistorique(ligne: LigneSemaineHistorique): SemaineHis
     nbSeancesPrevues: ligne.nb_seances_prevues,
     nbSeancesTerminees: ligne.nb_seances_terminees,
     bilan: (ligne.bilan as BilanHebdomadaire | null) ?? undefined,
+  };
+}
+
+export function versRepas(ligne: LigneRepas): Repas {
+  return {
+    id: ligne.id,
+    date: ligne.created_at,
+    titre: ligne.titre,
+    calories: ligne.calories,
+    proteinesG: ligne.proteines_g,
+    glucidesG: ligne.glucides_g,
+    lipidesG: ligne.lipides_g,
+    photo: ligne.photo ?? undefined,
   };
 }

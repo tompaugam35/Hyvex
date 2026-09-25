@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 export const navItems = [
   { href: "/dashboard", label: "Accueil", icon: "home" },
   { href: "/historique", label: "Historique", icon: "chart" },
-  { href: "/bilan", label: "Bilan", icon: "spark" },
+  { href: "/calories", label: "Calories", icon: "flame" },
   { href: "/profil", label: "Profil", icon: "user" },
 ] as const;
 
@@ -38,10 +38,10 @@ function Icon({ name, active }: { name: string; active: boolean }) {
           <path d="M20 20v-7" />
         </svg>
       );
-    case "spark":
+    case "flame":
       return (
         <svg {...common}>
-          <path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M18 6l-2.5 2.5M8.5 15.5 6 18" />
+          <path d="M12 3c1 3-2 4-2 7a3 3 0 0 0 6 0c1.5 1.5 2 3.5 2 5a6 6 0 1 1-12 0c0-3 1.5-4.5 3-6.5C10 6.5 11 5 12 3Z" />
         </svg>
       );
     case "user":

@@ -5,11 +5,12 @@ import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { IntensiteBadge, QualiteBadge, StatutBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { SelecteurHeure } from "@/components/ui/SelecteurHeure";
 import { useProgramme } from "@/lib/use-programme";
 
 export default function SeanceDetailPage() {
   const params = useParams<{ id: string }>();
-  const { programme, charge } = useProgramme();
+  const { programme, charge, definirHeureSeance } = useProgramme();
 
   const seance = programme?.seances.find((s) => s.id === params.id);
 
@@ -42,6 +43,12 @@ export default function SeanceDetailPage() {
         <p className="text-sm text-foreground-muted">
           {seance.jour ?? "Pas encore placée"} · {seance.dureeEstimeeMinutes} min estimées
         </p>
+        <div className="pt-1">
+          <SelecteurHeure
+            valeur={seance.heure}
+            onChange={(heure) => definirHeureSeance(seance.id, heure)}
+          />
+        </div>
       </header>
 
       <section className="flex flex-col gap-3">

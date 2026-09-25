@@ -22,10 +22,24 @@ export interface PerformanceMuscu {
   squat?: string;
 }
 
+// Objectifs quotidiens de nutrition, calculés par l'IA à partir du poids souhaité.
+export interface ObjectifsNutrition {
+  calories: number;
+  proteinesG: number;
+  glucidesG: number;
+  lipidesG: number;
+}
+
 export interface ProfilUtilisateur {
   id: string;
   prenom: string;
   niveau: NiveauSportif;
+  tailleCm?: number;
+  poidsKg?: number;
+  poidsObjectifKg?: number;
+  objectifsNutrition?: ObjectifsNutrition;
+  dernierBilanMensuelVu?: string; // "YYYY-MM" du dernier bilan mensuel déjà affiché
+  photoUrl?: string; // avatar choisi parmi la galerie proposée
   qualitesPrioritaires: Qualite[]; // 1 à 3 qualités choisies ; longueur 3 = équilibre
   performanceCourse: PerformanceCourse;
   performanceMuscu: PerformanceMuscu;
@@ -54,6 +68,7 @@ export interface Exercice {
 export interface Seance {
   id: string;
   jour: string | null; // ex: "Lundi", choisi par l'utilisateur ; null tant que non placée
+  heure?: string; // "HH:MM", choisie par l'utilisateur, optionnelle
   titre: string;
   qualite: Qualite;
   dureeEstimeeMinutes: number;
@@ -88,10 +103,14 @@ export interface SeanceLog {
 
 // Repère visuel sur le calendrier pour un autre sport pratiqué (pas de détail de séance,
 // juste de quoi organiser sa semaine — le site ne planifie que les séances hybrid).
+// Validation minimale : une fatigue ressentie suffit, pas de bilan complet comme
+// pour les séances hybrid.
 export interface AutreSportPlace {
   id: string;
   nom: string;
   jour: string | null;
+  valide?: boolean;
+  fatigue?: number; // 1-10
 }
 
 export interface ProgrammeSemaine {
@@ -127,6 +146,40 @@ export interface JournalEntree {
   dureeSecondes?: number;
   deniveleMetres?: number;
   terrain?: TerrainCourse;
+  // Durée prévue de la séance au moment de sa validation (pas la durée réelle) :
+  // sert à estimer le temps total d'entraînement, y compris pour la muscu et
+  // l'explosivité qui n'ont pas de chrono réel.
+  dureeEstimeeMinutes?: number;
+}
+
+// Récapitulatif d'un mois complet et révolu, affiché en fenêtre à l'ouverture de
+// l'app le mois suivant, et exportable en image pour les réseaux sociaux.
+export interface BilanMensuel {
+  mois: string; // "YYYY-MM"
+  libelleMois: string; // "Septembre 2026"
+  prenom: string;
+  nbSeances: number;
+  nbSeancesPrevues: number;
+  tauxCompletion: number; // 0-100, arrondi
+  parQualite: Record<Qualite, number>;
+  distanceTotaleMetres: number;
+  deniveleTotalMetres: number;
+  dureeTotaleSecondes: number;
+  allureMoyenneSecondesParKm: number | null;
+  plusLongueSortieMetres: number | null;
+  deltaVsMoisPrecedent: number;
+  semainesReussies: number;
+  semainesTotal: number;
+  meilleurMoisAnnee: boolean;
+}
+
+// Un jour du graphique d'évolution poids/fatigue de la page profil (30 derniers
+// jours). Les deux valeurs sont indépendantes : un jour peut n'avoir que l'une,
+// l'autre ou aucune.
+export interface PointEvolution {
+  date: string; // "YYYY-MM-DD"
+  poidsKg?: number;
+  fatigue?: number; // moyenne du jour si plusieurs séances renseignées
 }
 
 // Résumé d'une semaine passée, créé au moment où l'IA génère la semaine suivante.
@@ -136,4 +189,16 @@ export interface SemaineHistorique {
   nbSeancesPrevues: number;
   nbSeancesTerminees: number;
   bilan?: BilanHebdomadaire;
+}
+
+// Un repas photographié et analysé par l'IA (estimation nutritionnelle).
+export interface Repas {
+  id: string;
+  date: string; // ISO, horodatage de l'ajout
+  titre: string;
+  calories: number;
+  proteinesG: number;
+  glucidesG: number;
+  lipidesG: number;
+  photo?: string; // data URL (base64), miniature redimensionnée côté client
 }

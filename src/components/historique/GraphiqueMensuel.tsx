@@ -7,6 +7,8 @@ const couleurParQualite: Record<Qualite, string> = {
 };
 
 const NB_JOURS = 30;
+const HAUTEUR_MIN = 20;
+const HAUTEUR_MAX = 92;
 
 // Clé de jour en heure locale (et non UTC, sans quoi les séances du soir
 // basculent sur le mauvais jour pour les fuseaux horaires en avance sur UTC).
@@ -15,6 +17,30 @@ function cleDate(date: Date) {
   const mois = String(date.getMonth() + 1).padStart(2, "0");
   const jour = String(date.getDate()).padStart(2, "0");
   return `${annee}-${mois}-${jour}`;
+}
+
+// Intensité perçue de la séance : moyenne de l'effort ressenti (RPE) et de la
+// fatigue indiqués par l'utilisateur au bilan post-séance. Valeur neutre par
+// défaut si rien n'a été renseigné (ex. séance importée depuis Strava).
+function scoreIntensite(entree: JournalEntree) {
+  const valeurs = [entree.rpe, entree.fatigue].filter((v): v is number => v !== undefined);
+  if (valeurs.length === 0) return 5;
+  return valeurs.reduce((a, b) => a + b, 0) / valeurs.length;
+}
+
+function hauteurBarre(entree: JournalEntree) {
+  const score = scoreIntensite(entree);
+  return HAUTEUR_MIN + ((score - 1) / 9) * (HAUTEUR_MAX - HAUTEUR_MIN);
+}
+
+// Ramène le total des barres d'un jour à HAUTEUR_MAX (sans changer leurs
+// proportions relatives) pour éviter qu'elles ne débordent du graphique.
+function hauteursJour(entreesJour: JournalEntree[]) {
+  const hauteurs = entreesJour.map(hauteurBarre);
+  const total = hauteurs.reduce((a, b) => a + b, 0);
+  if (total <= HAUTEUR_MAX) return hauteurs;
+  const echelle = HAUTEUR_MAX / total;
+  return hauteurs.map((h) => h * echelle);
 }
 
 export function GraphiqueMensuel({ entrees }: { entrees: JournalEntree[] }) {
@@ -41,13 +67,15 @@ export function GraphiqueMensuel({ entrees }: { entrees: JournalEntree[] }) {
         {jours.map((jour) => {
           const cle = cleDate(jour);
           const entreesJour = entreesParJour.get(cle) ?? [];
+          const hauteurs = hauteursJour(entreesJour);
           return (
             <div key={cle} className="flex h-full flex-1 flex-col-reverse gap-[2px]">
-              {entreesJour.map((entree) => (
+              <div className="h-[3px] w-full shrink-0 rounded-full bg-border" />
+              {entreesJour.map((entree, i) => (
                 <div
                   key={entree.id}
                   className={`w-full rounded-[2px] ${couleurParQualite[entree.qualite]}`}
-                  style={{ height: `${100 / entreesJour.length}%` }}
+                  style={{ height: `${hauteurs[i]}%` }}
                   title={`${entree.titre} — ${jour.toLocaleDateString("fr-FR", {
                     day: "numeric",
                     month: "short",

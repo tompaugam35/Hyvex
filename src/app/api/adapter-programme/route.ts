@@ -115,6 +115,7 @@ export async function POST() {
     return NextResponse.json({ programme, bilan });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erreur inconnue";
+    console.error("[/api/adapter-programme] échec :", error);
     return NextResponse.json({ erreur: message }, { status: 502 });
   }
 }

@@ -11,6 +11,7 @@ import {
 } from "./schema";
 import {
   decrireAutresSports,
+  decrireMorphologie,
   decrireObjectifsTexte,
   decrirePerformanceCourse,
   decrirePerformanceMuscu,
@@ -165,6 +166,7 @@ function construirePrompt(requete: AdapterRequest): string {
   return `Profil de l'athlète :
 - Prénom : ${profil.prenom}
 - Niveau : ${niveauLabel[profil.niveau]}
+- Taille / poids : ${decrireMorphologie(profil.tailleCm, profil.poidsKg)}
 - Priorité : ${decrirePriorite(profil.qualitesPrioritaires)}
 - Niveau course à pied (temps réalisés) : ${decrirePerformanceCourse(profil.performanceCourse)}
 - Niveau musculation (charges actuelles) : ${decrirePerformanceMuscu(profil.performanceMuscu)}
@@ -182,6 +184,7 @@ Analyse cette semaine et génère le programme de la semaine ${numeroSemainePrec
 - Pour la course, ajuste distance/allure/dénivelé en te basant sur le ressenti, l'allure réelle et le terrain communiqués (ex : ressenti bas avec allure rapide → tu peux augmenter légèrement le volume ou l'intensité ; ressenti élevé ou allure en difficulté → stabilise ou allège). Si aucune donnée n'est disponible pour une séance réalisée, garde un volume prudent et stable.
 - Une séance "non réalisée" ne doit pas être ignorée : réduis légèrement la charge globale ou adapte la répartition plutôt que d'accumuler le volume manqué.
 - Si des temps de course ou des charges de musculation sont communiqués, calibre précisément les allures et les charges proposées sur ces données réelles plutôt que sur des estimations génériques.
+- Si la taille et/ou le poids sont communiqués, tiens-en compte pour ajuster les charges de musculation (ex : ratio charge/poids de corps) et les repères des exercices de course et d'explosivité (foulée, hauteur de saut, mobilité).
 - Si l'athlète pratique d'autres sports, tiens compte de la charge et de la fatigue que ça représente déjà.${exclusion ? `\n- ${exclusion}` : ""}
 - Respecte toujours ${seancesHybrid} séances, ~${profil.dureeSeanceMinutes} minutes chacune, avec le matériel disponible.
 - L'athlète choisira lui-même quel jour placer chaque séance : ne les attribue pas à des jours précis, mais indique un niveau d'intensité (faible, modérée, élevée) cohérent pour chacune, pour qu'il puisse les espacer correctement.

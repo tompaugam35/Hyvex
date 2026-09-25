@@ -5,6 +5,15 @@ create table if not exists public.profils (
   user_id uuid primary key references auth.users (id) on delete cascade,
   prenom text not null,
   niveau text not null,
+  taille_cm integer,
+  poids_kg numeric,
+  poids_objectif_kg numeric,
+  dernier_bilan_mensuel_vu text,
+  photo_url text,
+  objectif_calories integer,
+  objectif_proteines_g numeric,
+  objectif_glucides_g numeric,
+  objectif_lipides_g numeric,
   qualites_prioritaires jsonb not null default '[]',
   performance_course jsonb not null default '{}',
   performance_muscu jsonb not null default '{}',
@@ -51,6 +60,9 @@ create table if not exists public.journal_seances (
   duree_secondes integer,
   denivele_metres numeric,
   terrain text,
+  -- Durée prévue de la séance au moment de sa validation (pas la durée réelle) :
+  -- sert au calcul du temps total d'entraînement dans le bilan mensuel.
+  duree_estimee_minutes integer,
   created_at timestamptz not null default now(),
   unique (user_id, strava_activity_id)
 );
@@ -68,6 +80,18 @@ create table if not exists public.semaines_historique (
   unique (user_id, numero_semaine)
 );
 
+-- Une ligne par jour où le poids a été renseigné (au plus une par jour : une
+-- nouvelle saisie le même jour remplace la précédente). Sert au graphique
+-- d'évolution poids/fatigue de la page profil.
+create table if not exists public.poids_historique (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  poids_kg numeric not null,
+  date date not null default current_date,
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+
 -- Jetons OAuth Strava, un par utilisateur connecté.
 create table if not exists public.strava_tokens (
   user_id uuid primary key references auth.users (id) on delete cascade,
@@ -79,11 +103,27 @@ create table if not exists public.strava_tokens (
   created_at timestamptz not null default now()
 );
 
+-- Un repas photographié et analysé par l'IA. La photo est stockée redimensionnée
+-- (data URL base64) directement en base, sans bucket de stockage séparé.
+create table if not exists public.repas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  titre text not null,
+  calories integer not null,
+  proteines_g numeric not null,
+  glucides_g numeric not null,
+  lipides_g numeric not null,
+  photo text,
+  created_at timestamptz not null default now()
+);
+
 alter table public.profils enable row level security;
 alter table public.programmes enable row level security;
 alter table public.journal_seances enable row level security;
 alter table public.semaines_historique enable row level security;
+alter table public.poids_historique enable row level security;
 alter table public.strava_tokens enable row level security;
+alter table public.repas enable row level security;
 
 create policy "Un utilisateur gère son propre profil"
   on public.profils for all
@@ -105,7 +145,17 @@ create policy "Un utilisateur gère son propre historique de semaines"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+create policy "Un utilisateur gère son propre historique de poids"
+  on public.poids_historique for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 create policy "Un utilisateur gère son propre jeton Strava"
   on public.strava_tokens for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "Un utilisateur gère ses propres repas"
+  on public.repas for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);

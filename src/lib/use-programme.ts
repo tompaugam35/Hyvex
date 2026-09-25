@@ -1,13 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type {
-  BilanHebdomadaire,
-  ProfilUtilisateur,
-  ProgrammeSemaine,
-  SeanceLog,
-  StatutSeance,
-} from "@/types";
+import type { ProfilUtilisateur, ProgrammeSemaine, SeanceLog, StatutSeance } from "@/types";
 import { creerClientNavigateur } from "./supabase/client";
 import { versProfil, versProgramme } from "./supabase/mappers";
 import { jourDepuisDate } from "./semaine";
@@ -18,7 +12,6 @@ interface EtatProgramme {
   userId: string | null;
   profil: ProfilUtilisateur | null;
   programme: ProgrammeSemaine | null;
-  dernierBilan?: BilanHebdomadaire;
 }
 
 const etatInitial: EtatProgramme = {
@@ -26,6 +19,20 @@ const etatInitial: EtatProgramme = {
   profil: null,
   programme: null,
 };
+
+// Une ligne par jour : une nouvelle saisie le même jour remplace la précédente
+// plutôt que d'empiler plusieurs valeurs pour la même journée sur le graphique.
+async function enregistrerPoidsHistorique(
+  supabase: ReturnType<typeof creerClientNavigateur>,
+  userId: string,
+  poidsKg: number
+) {
+  const aujourdHui = new Date();
+  const cle = `${aujourdHui.getFullYear()}-${String(aujourdHui.getMonth() + 1).padStart(2, "0")}-${String(aujourdHui.getDate()).padStart(2, "0")}`;
+  await supabase
+    .from("poids_historique")
+    .upsert({ user_id: userId, poids_kg: poidsKg, date: cle }, { onConflict: "user_id,date" });
+}
 
 export function useProgramme() {
   const [etat, setEtat] = useState<EtatProgramme>(etatInitial);
@@ -56,7 +63,6 @@ export function useProgramme() {
       userId: user.id,
       profil: ligneProfil ? versProfil(ligneProfil) : null,
       programme: ligneProgramme ? versProgramme(ligneProgramme) : null,
-      dernierBilan: (ligneProgramme?.dernier_bilan as BilanHebdomadaire | null) ?? undefined,
     });
     setCharge(true);
   }, []);
@@ -105,6 +111,7 @@ export function useProgramme() {
         duree_secondes: log.dureeSecondes ?? null,
         denivele_metres: log.deniveleMetres ?? null,
         terrain: log.terrain ?? null,
+        duree_estimee_minutes: seance.dureeEstimeeMinutes,
       }),
     ]);
   }, []);
@@ -128,6 +135,25 @@ export function useProgramme() {
       .eq("user_id", actuel.userId);
   }, []);
 
+  const definirHeureSeance = useCallback(async (seanceId: string, heure: string | null) => {
+    const actuel = etatRef.current;
+    if (!actuel.programme || !actuel.userId) return;
+
+    const seances = actuel.programme.seances.map((s) =>
+      s.id === seanceId ? { ...s, heure: heure ?? undefined } : s
+    );
+
+    setEtat((prev) =>
+      prev.programme ? { ...prev, programme: { ...prev.programme, seances } } : prev
+    );
+
+    const supabase = creerClientNavigateur();
+    await supabase
+      .from("programmes")
+      .update({ seances, updated_at: new Date().toISOString() })
+      .eq("user_id", actuel.userId);
+  }, []);
+
   const mettreAJourProfil = useCallback(async (input: ProfilInput) => {
     const actuel = etatRef.current;
     if (!actuel.userId) return;
@@ -136,6 +162,10 @@ export function useProgramme() {
       id: actuel.userId,
       prenom: input.prenom,
       niveau: input.niveau,
+      tailleCm: input.tailleCm,
+      poidsKg: input.poidsKg,
+      poidsObjectifKg: input.poidsObjectifKg,
+      objectifsNutrition: actuel.profil?.objectifsNutrition,
       qualitesPrioritaires: input.qualitesPrioritaires,
       performanceCourse: input.performanceCourse,
       performanceMuscu: input.performanceMuscu,
@@ -153,6 +183,9 @@ export function useProgramme() {
       .update({
         prenom: nouveauProfil.prenom,
         niveau: nouveauProfil.niveau,
+        taille_cm: nouveauProfil.tailleCm ?? null,
+        poids_kg: nouveauProfil.poidsKg ?? null,
+        poids_objectif_kg: nouveauProfil.poidsObjectifKg ?? null,
         qualites_prioritaires: nouveauProfil.qualitesPrioritaires,
         performance_course: nouveauProfil.performanceCourse,
         performance_muscu: nouveauProfil.performanceMuscu,
@@ -178,6 +211,35 @@ export function useProgramme() {
     }
 
     setEtat((prev) => ({ ...prev, profil: nouveauProfil }));
+
+    if (nouveauProfil.poidsKg !== undefined) {
+      await enregistrerPoidsHistorique(supabase, actuel.userId, nouveauProfil.poidsKg);
+    }
+
+    // Recalcule les objectifs nutritionnels si un des éléments qui les détermine a
+    // changé. Best-effort : un échec ici ne doit pas faire échouer l'enregistrement
+    // du profil, qui vient de réussir.
+    const ancien = actuel.profil;
+    const nutritionAChanger =
+      nouveauProfil.poidsObjectifKg !== undefined &&
+      (nouveauProfil.poidsObjectifKg !== ancien?.poidsObjectifKg ||
+        nouveauProfil.poidsKg !== ancien?.poidsKg ||
+        nouveauProfil.tailleCm !== ancien?.tailleCm);
+
+    if (nutritionAChanger) {
+      try {
+        const reponse = await fetch("/api/calculer-objectifs-nutrition", { method: "POST" });
+        if (reponse.ok) {
+          const { objectifs } = await reponse.json();
+          setEtat((prev) =>
+            prev.profil ? { ...prev, profil: { ...prev.profil, objectifsNutrition: objectifs } } : prev
+          );
+        }
+      } catch {
+        // ignore : le profil est déjà enregistré, les objectifs se recalculeront
+        // à la prochaine modification pertinente.
+      }
+    }
   }, []);
 
   const placerAutreSport = useCallback(async (id: string, jour: string | null) => {
@@ -199,14 +261,75 @@ export function useProgramme() {
       .eq("user_id", actuel.userId);
   }, []);
 
+  const validerAutreSport = useCallback(async (id: string, fatigue: number) => {
+    const actuel = etatRef.current;
+    if (!actuel.programme || !actuel.userId) return;
+
+    const autresSportsPlaces = actuel.programme.autresSportsPlaces.map((s) =>
+      s.id === id ? { ...s, valide: true, fatigue } : s
+    );
+
+    setEtat((prev) =>
+      prev.programme ? { ...prev, programme: { ...prev.programme, autresSportsPlaces } } : prev
+    );
+
+    const supabase = creerClientNavigateur();
+    await supabase
+      .from("programmes")
+      .update({ autres_sports_places: autresSportsPlaces, updated_at: new Date().toISOString() })
+      .eq("user_id", actuel.userId);
+  }, []);
+
+  const definirPhotoProfil = useCallback(async (photoUrl: string) => {
+    const actuel = etatRef.current;
+    if (!actuel.profil || !actuel.userId) return;
+
+    setEtat((prev) => (prev.profil ? { ...prev, profil: { ...prev.profil, photoUrl } } : prev));
+
+    const supabase = creerClientNavigateur();
+    await supabase.from("profils").update({ photo_url: photoUrl }).eq("user_id", actuel.userId);
+  }, []);
+
+  const definirPoidsAujourdhui = useCallback(async (poidsKg: number) => {
+    const actuel = etatRef.current;
+    if (!actuel.profil || !actuel.userId) return;
+
+    setEtat((prev) => (prev.profil ? { ...prev, profil: { ...prev.profil, poidsKg } } : prev));
+
+    const supabase = creerClientNavigateur();
+    await Promise.all([
+      supabase.from("profils").update({ poids_kg: poidsKg }).eq("user_id", actuel.userId),
+      enregistrerPoidsHistorique(supabase, actuel.userId, poidsKg),
+    ]);
+
+    // Recalcule les objectifs nutritionnels : best-effort, le poids en est un des
+    // paramètres. Un échec ici ne remet pas en cause l'enregistrement du poids.
+    if (actuel.profil.poidsObjectifKg !== undefined) {
+      try {
+        const reponse = await fetch("/api/calculer-objectifs-nutrition", { method: "POST" });
+        if (reponse.ok) {
+          const { objectifs } = await reponse.json();
+          setEtat((prev) =>
+            prev.profil ? { ...prev, profil: { ...prev.profil, objectifsNutrition: objectifs } } : prev
+          );
+        }
+      } catch {
+        // ignore : le poids est déjà enregistré.
+      }
+    }
+  }, []);
+
   return {
     profil: etat.profil,
     programme: etat.programme,
-    dernierBilan: etat.dernierBilan,
     enregistrerRetourSeance,
     placerSeance,
+    definirHeureSeance,
     placerAutreSport,
+    validerAutreSport,
     mettreAJourProfil,
+    definirPhotoProfil,
+    definirPoidsAujourdhui,
     rafraichir,
     charge,
   };

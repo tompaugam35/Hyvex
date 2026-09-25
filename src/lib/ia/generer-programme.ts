@@ -7,6 +7,7 @@ import {
 import { deplierEnveloppeUnique, depilerChampTableau } from "./normaliser";
 import {
   decrireAutresSports,
+  decrireMorphologie,
   decrireObjectifsTexte,
   decrirePerformanceCourse,
   decrirePerformanceMuscu,
@@ -80,6 +81,7 @@ function construirePrompt(profil: ProfilInput): string {
   return `Profil de l'athlète :
 - Prénom : ${profil.prenom}
 - Niveau : ${niveauLabel[profil.niveau]}
+- Taille / poids : ${decrireMorphologie(profil.tailleCm, profil.poidsKg)}
 - Priorité : ${decrirePriorite(profil.qualitesPrioritaires)}
 - Niveau course à pied (temps réalisés) : ${decrirePerformanceCourse(profil.performanceCourse)}
 - Niveau musculation (charges actuelles) : ${decrirePerformanceMuscu(profil.performanceMuscu)}
@@ -93,6 +95,7 @@ Génère le programme d'entraînement de la première semaine pour cet athlète 
 - Chaque séance dure environ ${profil.dureeSeanceMinutes} minutes.
 - N'utilise que du matériel parmi : ${profil.materiel.join(", ")}.
 - Adapte le volume et l'intensité au niveau ${profil.niveau}.
+- Si la taille et/ou le poids sont communiqués, calibre les charges de musculation (ex : ratio charge/poids de corps) et adapte les repères des exercices de course et d'explosivité (foulée, hauteur de saut, mobilité) à cette morphologie.
 - Si des temps de course ou des charges de musculation sont communiqués, calibre précisément les allures et les charges proposées sur ces données réelles plutôt que sur des estimations génériques liées au niveau.
 - Respecte la priorité indiquée et les objectifs précis communiqués.${exclusion ? `\n- ${exclusion}` : ""}
 - Si l'athlète pratique d'autres sports, tiens compte de la charge et de la fatigue que ça représente déjà (n'ajoute pas un volume hybrid qui, cumulé aux autres sports, deviendrait excessif).

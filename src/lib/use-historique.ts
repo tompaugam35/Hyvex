@@ -35,7 +35,7 @@ export function useHistorique() {
         .select("*")
         .eq("user_id", user.id)
         .order("numero_semaine", { ascending: false })
-        .limit(3),
+        .limit(1),
     ]);
 
     setJournal((lignesJournal ?? []).map(versJournalEntree));

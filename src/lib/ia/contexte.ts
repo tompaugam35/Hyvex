@@ -53,3 +53,10 @@ export function decrirePerformanceMuscu(perf: PerformanceMuscu | undefined): str
   if (perf?.squat) lignes.push(`squat ${perf.squat}`);
   return lignes.length > 0 ? lignes.join(", ") : "non communiqué";
 }
+
+export function decrireMorphologie(tailleCm: number | undefined, poidsKg: number | undefined): string {
+  if (tailleCm && poidsKg) return `${tailleCm} cm, ${poidsKg} kg`;
+  if (tailleCm) return `${tailleCm} cm, poids non communiqué`;
+  if (poidsKg) return `${poidsKg} kg, taille non communiquée`;
+  return "non communiquée";
+}

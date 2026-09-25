@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { SelectCard } from "@/components/ui/SelectCard";
 import { Stepper } from "@/components/ui/Stepper";
+import { ChampNombre } from "@/components/ui/ChampNombre";
 import { creerClientNavigateur } from "@/lib/supabase/client";
 import { sauvegarderBrouillon } from "@/lib/onboarding-brouillon";
+import type { ProfilInput } from "@/lib/ia/schema";
 import {
   niveaux,
   qualiteOptions,
@@ -18,12 +21,14 @@ import type { AutreSport, NiveauSportif, PerformanceCourse, PerformanceMuscu, Qu
 type StepKey =
   | "prenom"
   | "niveau"
+  | "morphologie"
   | "qualites"
   | "niveau-performance"
   | "objectifs"
   | "autres-sports"
   | "dispo"
   | "materiel"
+  | "objectif-poids"
   | "compte";
 
 function calculerSteps(qualites: Qualite[]): StepKey[] {
@@ -31,20 +36,26 @@ function calculerSteps(qualites: Qualite[]): StepKey[] {
   return [
     "prenom",
     "niveau",
+    "morphologie",
     "qualites",
     ...(inclureNiveauPerf ? (["niveau-performance"] as StepKey[]) : []),
     "objectifs",
     "autres-sports",
     "dispo",
     "materiel",
+    "objectif-poids",
     "compte",
   ];
 }
 
 export default function OnboardingPage() {
+  const router = useRouter();
   const [step, setStep] = useState(0);
   const [prenom, setPrenom] = useState("");
   const [niveau, setNiveau] = useState<NiveauSportif | null>(null);
+  const [tailleCm, setTailleCm] = useState<number | undefined>(undefined);
+  const [poidsKg, setPoidsKg] = useState<number | undefined>(undefined);
+  const [poidsObjectifKg, setPoidsObjectifKg] = useState<number | undefined>(undefined);
   const [qualites, setQualites] = useState<Qualite[]>([]);
   const [performanceCourse, setPerformanceCourse] = useState<PerformanceCourse>({});
   const [performanceMuscu, setPerformanceMuscu] = useState<PerformanceMuscu>({});
@@ -57,8 +68,10 @@ export default function OnboardingPage() {
   const [materiel, setMateriel] = useState<string[]>([]);
 
   const [email, setEmail] = useState("");
-  const [lienEnvoye, setLienEnvoye] = useState(false);
-  const [authEtat, setAuthEtat] = useState<"idle" | "en_cours" | "erreur">("idle");
+  const [motDePasse, setMotDePasse] = useState("");
+  const [compteEtat, setCompteEtat] = useState<
+    "formulaire" | "en_cours" | "attente_confirmation" | "erreur_generation"
+  >("formulaire");
   const [authErreur, setAuthErreur] = useState("");
 
   const steps = calculerSteps(qualites);
@@ -66,6 +79,7 @@ export default function OnboardingPage() {
   const progress = ((step + 1) / steps.length) * 100;
 
   const emailValide = /\S+@\S+\.\S+/.test(email);
+  const motDePasseValide = motDePasse.length >= 6;
   const sommeAutresSports = autresSports.reduce((t, s) => t + s.frequenceParSemaine, 0);
   const plancherSeances = sommeAutresSports + 1;
   const seancesEffectif = Math.max(seances, plancherSeances);
@@ -74,13 +88,16 @@ export default function OnboardingPage() {
   const canNext = {
     prenom: prenom.trim().length > 0,
     niveau: niveau !== null,
+    morphologie: true,
     qualites: qualites.length > 0,
     "niveau-performance": true,
     objectifs: true,
     "autres-sports": true,
     dispo: true,
     materiel: materiel.length > 0,
-    compte: emailValide && !lienEnvoye,
+    "objectif-poids": true,
+    compte:
+      compteEtat === "formulaire" ? emailValide && motDePasseValide : compteEtat === "erreur_generation",
   }[stepKey];
 
   function toggleQualite(q: Qualite) {
@@ -106,15 +123,32 @@ export default function OnboardingPage() {
     setNouveauSportFreq(1);
   }
 
-  async function envoyerLien() {
+  async function genererEtRediriger(profil: ProfilInput) {
+    try {
+      const reponse = await fetch("/api/generer-programme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profil),
+      });
+      if (!reponse.ok) throw new Error("La génération a échoué");
+      router.push("/dashboard");
+    } catch {
+      setAuthErreur(
+        "Ton compte a été créé, mais la génération de ton programme a échoué. Réessaie."
+      );
+      setCompteEtat("erreur_generation");
+    }
+  }
+
+  async function creerCompte() {
     if (!niveau || qualites.length === 0) return;
 
-    setAuthEtat("en_cours");
-    setAuthErreur("");
-
-    sauvegarderBrouillon({
+    const profil: ProfilInput = {
       prenom,
       niveau,
+      tailleCm,
+      poidsKg,
+      poidsObjectifKg,
       qualitesPrioritaires: qualites,
       performanceCourse,
       performanceMuscu,
@@ -123,30 +157,48 @@ export default function OnboardingPage() {
       seancesParSemaine: seancesEffectif,
       dureeSeanceMinutes: duree,
       materiel,
-    });
+    };
 
-    const supabase = creerClientNavigateur();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}/onboarding/finaliser`,
-      },
-    });
-
-    if (error) {
-      setAuthErreur("Impossible d'envoyer le lien. Vérifie ton adresse email.");
-      setAuthEtat("erreur");
+    // La génération a déjà échoué une fois : le compte existe et la session est
+    // active, on retente juste l'appel de génération sans recréer le compte.
+    if (compteEtat === "erreur_generation") {
+      setCompteEtat("en_cours");
+      setAuthErreur("");
+      await genererEtRediriger(profil);
       return;
     }
 
-    setAuthEtat("idle");
-    setLienEnvoye(true);
+    setCompteEtat("en_cours");
+    setAuthErreur("");
+
+    const supabase = creerClientNavigateur();
+    const { data, error } = await supabase.auth.signUp({ email, password: motDePasse });
+
+    if (error) {
+      setAuthErreur(
+        error.message.toLowerCase().includes("already registered") ||
+          error.message.toLowerCase().includes("already exists")
+          ? "Un compte existe déjà avec cet email. Connecte-toi plutôt depuis la page de connexion."
+          : "Impossible de créer le compte. Vérifie ton email et ton mot de passe (6 caractères minimum)."
+      );
+      setCompteEtat("formulaire");
+      return;
+    }
+
+    if (!data.session) {
+      // Confirmation par email exigée côté Supabase : on garde le profil en
+      // attente, /onboarding/finaliser prendra le relais après le clic sur le lien.
+      sauvegarderBrouillon(profil);
+      setCompteEtat("attente_confirmation");
+      return;
+    }
+
+    await genererEtRediriger(profil);
   }
 
   async function next() {
     if (stepKey === "compte") {
-      await envoyerLien();
+      await creerCompte();
       return;
     }
     setStep(step + 1);
@@ -199,6 +251,32 @@ export default function OnboardingPage() {
                   <p className="text-sm text-foreground-muted">{n.desc}</p>
                 </SelectCard>
               ))}
+            </div>
+          </StepBlock>
+        )}
+
+        {stepKey === "morphologie" && (
+          <StepBlock title="Ta taille et ton poids">
+            <div className="flex flex-col gap-4">
+              <ChampNombre
+                label="Taille"
+                value={tailleCm}
+                onChange={setTailleCm}
+                unite="cm"
+                placeholder="Optionnel — ex : 178"
+              />
+              <ChampNombre
+                label="Poids"
+                value={poidsKg}
+                onChange={setPoidsKg}
+                unite="kg"
+                placeholder="Optionnel — ex : 72"
+                decimales
+              />
+              <p className="text-xs text-foreground-muted">
+                Optionnel — ça aide ton coach IA à calibrer les charges de musculation et les
+                exercices à ta morphologie.
+              </p>
             </div>
           </StepBlock>
         )}
@@ -453,37 +531,45 @@ export default function OnboardingPage() {
           </StepBlock>
         )}
 
+        {stepKey === "objectif-poids" && (
+          <StepBlock title="Quel est ton objectif de poids ?">
+            <div className="flex flex-col gap-4">
+              <ChampNombre
+                label="Poids souhaité"
+                value={poidsObjectifKg}
+                onChange={setPoidsObjectifKg}
+                unite="kg"
+                placeholder="Optionnel — ex : 70"
+                decimales
+              />
+              <p className="text-xs text-foreground-muted">
+                Optionnel — ton coach IA calcule à partir de ça tes objectifs quotidiens de
+                calories et de protéines, glucides, lipides sur la page Calories.
+              </p>
+            </div>
+          </StepBlock>
+        )}
+
         {stepKey === "compte" && (
           <StepBlock
             title={
-              lienEnvoye ? "Vérifie ta boîte mail" : "Crée ton compte pour voir ton programme"
+              compteEtat === "attente_confirmation"
+                ? "Confirme ton email"
+                : compteEtat === "erreur_generation"
+                  ? "Presque fini !"
+                  : "Crée ton compte pour voir ton programme"
             }
           >
-            {!lienEnvoye ? (
-              <>
-                <p className="text-sm text-foreground-muted">
-                  Pas de mot de passe à retenir : on t&apos;envoie un lien de connexion par
-                  email. En cliquant dessus, ton programme sera généré automatiquement.
-                </p>
-                <input
-                  autoFocus
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="ton@email.com"
-                  className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
-                />
-              </>
-            ) : (
+            {compteEtat === "attente_confirmation" ? (
               <div className="flex flex-col gap-3">
                 <p className="text-sm text-foreground-muted">
-                  On vient d&apos;envoyer un lien à{" "}
-                  <span className="font-medium text-foreground">{email}</span>. Ouvre cet email
-                  et clique sur le lien pour générer ton programme.
+                  On vient d&apos;envoyer un email de confirmation à{" "}
+                  <span className="font-medium text-foreground">{email}</span>. Clique sur le
+                  lien pour générer ton programme.
                 </p>
                 <button
                   onClick={() => {
-                    setLienEnvoye(false);
+                    setCompteEtat("formulaire");
                     setAuthErreur("");
                   }}
                   className="self-start text-sm text-foreground-muted underline"
@@ -491,8 +577,38 @@ export default function OnboardingPage() {
                   Changer d&apos;email
                 </button>
               </div>
+            ) : compteEtat === "erreur_generation" ? (
+              <p className="text-sm text-foreground-muted">
+                Ton compte <span className="font-medium text-foreground">{email}</span> est créé
+                — il ne reste plus qu&apos;à générer ton programme.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-foreground-muted">
+                  Ton email et un mot de passe suffisent pour créer ton compte.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <input
+                    autoFocus
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ton@email.com"
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                  />
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    value={motDePasse}
+                    onChange={(e) => setMotDePasse(e.target.value)}
+                    placeholder="Mot de passe (6 caractères min.)"
+                    className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
+                  />
+                </div>
+              </>
             )}
-            {authEtat === "erreur" && (
+            {authErreur && (
               <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
                 {authErreur}
               </p>
@@ -501,16 +617,18 @@ export default function OnboardingPage() {
         )}
       </div>
 
-      {!(stepKey === "compte" && lienEnvoye) && (
+      {!(stepKey === "compte" && compteEtat === "attente_confirmation") && (
         <Button
           onClick={next}
-          disabled={!canNext || authEtat === "en_cours"}
+          disabled={!canNext || compteEtat === "en_cours"}
           className="w-full"
         >
           {stepKey === "compte"
-            ? authEtat === "en_cours"
+            ? compteEtat === "en_cours"
               ? "Un instant…"
-              : "Recevoir mon lien"
+              : compteEtat === "erreur_generation"
+                ? "Réessayer"
+                : "Créer mon compte"
             : "Continuer"}
         </Button>
       )}

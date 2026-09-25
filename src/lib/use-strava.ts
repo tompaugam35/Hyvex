@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { creerClientNavigateur } from "./supabase/client";
 
+interface ResultatSynchro {
+  nbImportees: number;
+  nbAssociees: number;
+}
+
 export function useStrava() {
   const [connecte, setConnecte] = useState(false);
   const [charge, setCharge] = useState(false);
   const [synchroEnCours, setSynchroEnCours] = useState(false);
+  const [dernierResultat, setDernierResultat] = useState<ResultatSynchro | null>(null);
 
   const rafraichirStatut = useCallback(async () => {
     const supabase = creerClientNavigateur();
@@ -44,11 +50,25 @@ export function useStrava() {
   const synchroniser = useCallback(async () => {
     setSynchroEnCours(true);
     try {
-      await fetch("/api/strava/sync", { method: "POST" });
+      const reponse = await fetch("/api/strava/sync", { method: "POST" });
+      if (reponse.ok) {
+        const resultat = await reponse.json();
+        setDernierResultat(resultat);
+        return resultat as ResultatSynchro;
+      }
     } finally {
       setSynchroEnCours(false);
     }
+    return null;
   }, []);
 
-  return { connecte, charge, synchroEnCours, connecter, synchroniser, rafraichirStatut };
+  return {
+    connecte,
+    charge,
+    synchroEnCours,
+    dernierResultat,
+    connecter,
+    synchroniser,
+    rafraichirStatut,
+  };
 }

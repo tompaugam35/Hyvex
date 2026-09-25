@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { ChampNombre } from "@/components/ui/ChampNombre";
 import { cn } from "@/lib/utils";
 import { useProgramme } from "@/lib/use-programme";
 import type { Difficulte, SeanceLog, TerrainCourse } from "@/types";
@@ -106,7 +107,7 @@ export default function BilanSeancePage() {
             <ChampNombre
               label="Distance (km)"
               value={distanceKm}
-              onChange={setDistanceKm}
+              onChange={(v) => setDistanceKm(v ?? 0)}
               decimales
             />
             <div className="flex flex-col gap-2">
@@ -114,15 +115,15 @@ export default function BilanSeancePage() {
                 Allure moyenne (par km)
               </label>
               <div className="flex items-center gap-2">
-                <ChampNombre value={allureMin} onChange={setAllureMin} unite="min" />
+                <ChampNombre value={allureMin} onChange={(v) => setAllureMin(v ?? 0)} unite="min" />
                 <span className="text-foreground-muted">:</span>
-                <ChampNombre value={allureSec} onChange={setAllureSec} unite="sec" />
+                <ChampNombre value={allureSec} onChange={(v) => setAllureSec(v ?? 0)} unite="sec" />
               </div>
             </div>
             <ChampNombre
               label="Dénivelé positif (m)"
               value={denivele}
-              onChange={setDenivele}
+              onChange={(v) => setDenivele(v ?? 0)}
             />
           </Card>
 
@@ -224,50 +225,6 @@ export default function BilanSeancePage() {
       >
         {estCourse ? "Valider la séance" : "Valider et adapter la suite"}
       </Button>
-    </div>
-  );
-}
-
-function ChampNombre({
-  label,
-  value,
-  onChange,
-  unite,
-  decimales,
-}: {
-  label?: string;
-  value: number;
-  onChange: (value: number) => void;
-  unite?: string;
-  decimales?: boolean;
-}) {
-  const [texte, setTexte] = useState(String(value));
-  const motif = decimales ? /^\d*[.,]?\d*$/ : /^\d*$/;
-
-  return (
-    <div className="flex flex-col gap-2">
-      {label && <label className="text-sm font-semibold text-foreground-muted">{label}</label>}
-      <div className="relative">
-        <input
-          type="text"
-          inputMode={decimales ? "decimal" : "numeric"}
-          value={texte}
-          onFocus={(e) => e.target.select()}
-          onChange={(e) => {
-            const saisie = e.target.value;
-            if (!motif.test(saisie)) return;
-            setTexte(saisie);
-            const nombre = parseFloat(saisie.replace(",", "."));
-            onChange(Number.isNaN(nombre) ? 0 : nombre);
-          }}
-          className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none focus:border-foreground"
-        />
-        {unite && (
-          <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs text-foreground-muted">
-            {unite}
-          </span>
-        )}
-      </div>
     </div>
   );
 }

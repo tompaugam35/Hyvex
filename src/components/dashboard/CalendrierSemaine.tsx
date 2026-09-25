@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { IntensiteBadge, QualiteBadge, StatutBadge } from "@/components/ui/Badge";
+import { QualiteBadge } from "@/components/ui/Badge";
+import { ValiderAutreSportModal } from "@/components/dashboard/ValiderAutreSportModal";
 import { qualiteInfo } from "@/lib/qualites";
 import { joursDeLaSemaineEnCours, estAujourdHui } from "@/lib/semaine";
 import { cn } from "@/lib/utils";
@@ -40,13 +41,20 @@ export function CalendrierSemaine({
   autresSportsPlaces,
   onPlacer,
   onPlacerAutreSport,
+  onValiderAutreSport,
 }: {
   seances: Seance[];
   autresSportsPlaces: AutreSportPlace[];
   onPlacer: (seanceId: string, jour: string | null) => void;
   onPlacerAutreSport: (id: string, jour: string | null) => void;
+  onValiderAutreSport: (id: string, fatigue: number) => Promise<void>;
 }) {
-  const jours = joursDeLaSemaineEnCours();
+  const [sportAValider, setSportAValider] = useState<AutreSportPlace | null>(null);
+  const aujourdHuiMinuit = new Date();
+  aujourdHuiMinuit.setHours(0, 0, 0, 0);
+  // Les jours passés ne sont plus affichés ici : ils sont déjà dans l'historique.
+  // Une séance passée non validée reste accessible via SeancesEnAttente, en bas de page.
+  const jours = joursDeLaSemaineEnCours().filter((j) => j.date >= aujourdHuiMinuit);
   const seancesNonPlacees = seances.filter((s) => s.jour === null);
   const sportsNonPlaces = autresSportsPlaces.filter((s) => s.jour === null);
   const rienAPlacer = seancesNonPlacees.length === 0 && sportsNonPlaces.length === 0;
@@ -102,6 +110,11 @@ export function CalendrierSemaine({
         if (suivi.type === "seance") onPlacer(suivi.id, null);
         else onPlacerAutreSport(suivi.id, null);
       }
+    } else if (suivi && suivi.type === "sport") {
+      // Tap simple (pas de glissement) sur un autre sport déjà placé : ouvre la
+      // validation. Un sport encore dans le bandeau (non placé) n'a rien à valider.
+      const sport = autresSportsPlaces.find((s) => s.id === suivi.id);
+      if (sport && sport.jour !== null) setSportAValider(sport);
     }
 
     setApercu(null);
@@ -145,14 +158,12 @@ export function CalendrierSemaine({
       <div
         data-bandeau="true"
         className={cn(
-          "flex flex-col gap-2 rounded-2xl p-2 transition-colors",
+          "flex flex-col gap-1 rounded-2xl p-1 transition-colors",
           bandeauSurvole && "border-2 border-dashed border-accent bg-accent/10"
         )}
       >
-        <p className="text-xs text-foreground-muted">
-          {rienAPlacer
-            ? "Glisse une séance ici pour la retirer du calendrier."
-            : "Glisse une séance vers un jour du calendrier pour la placer, ou ici pour la retirer."}
+        <p className="text-[11px] text-foreground-muted">
+          {rienAPlacer ? "Glisse ici pour retirer une séance" : "Glisse pour placer, ou ici pour retirer"}
         </p>
         {!rienAPlacer && (
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -194,43 +205,56 @@ export function CalendrierSemaine({
         )}
       </div>
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-1">
         {jours.map(({ nom, date }) => {
           const seancesJour = seances.filter((s) => s.jour === nom);
           const sportsJour = autresSportsPlaces.filter((s) => s.jour === nom);
+          const vide = seancesJour.length === 0 && sportsJour.length === 0;
+          const jourTermine =
+            !vide &&
+            seancesJour.every((s) => s.statut === "terminee") &&
+            sportsJour.every((s) => s.valide);
+          const aujourdhui = estAujourdHui(date);
           return (
             <div
               key={nom}
               data-jour={nom}
               className={cn(
-                "flex flex-col gap-2 rounded-2xl border p-3 transition-colors",
+                "flex flex-col gap-1 rounded-2xl border p-1.5 transition-colors",
                 jourSurvole === nom
                   ? "border-dashed border-accent bg-accent/10"
                   : "border-border bg-surface"
               )}
             >
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold">{nom}</span>
-                <span className="text-xs text-foreground-muted">
+                <span className="text-base font-semibold">{nom}</span>
+                <span className="text-sm text-foreground-muted">
                   {date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                 </span>
-                {estAujourdHui(date) && (
-                  <span className="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold text-accent-foreground">
+                {aujourdhui && (
+                  <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-semibold text-accent-foreground">
                     Aujourd&apos;hui
                   </span>
                 )}
+                {jourTermine && (
+                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[11px] font-semibold text-[#4a5c00]">
+                    Terminée
+                  </span>
+                )}
+                {vide && (
+                  <span className="ml-auto text-sm text-foreground-muted">Aucune séance</span>
+                )}
               </div>
 
-              {seancesJour.length === 0 && sportsJour.length === 0 ? (
-                <p className="text-xs text-foreground-muted">Aucune séance</p>
-              ) : (
-                <div className="flex flex-col gap-2">
+              {!vide && (
+                <div className="flex flex-col gap-1">
                   {seancesJour.map((seance) => (
                     <div
                       key={seance.id}
                       onPointerDown={(e) => demarrerGlisse(e, "seance", seance.id)}
                       className={cn(
-                        "flex touch-none select-none items-center justify-between gap-2 rounded-xl bg-surface-muted p-2.5 transition-opacity",
+                        "flex touch-none select-none items-center justify-between gap-2 rounded-xl transition-opacity",
+                        aujourdhui ? "bg-accent/20 p-2.5" : "bg-surface-muted p-1.5",
                         apercu?.type === "seance" && apercu.id === seance.id && "opacity-30"
                       )}
                     >
@@ -238,14 +262,24 @@ export function CalendrierSemaine({
                         href={`/seances/${seance.id}`}
                         draggable={false}
                         onDragStart={(e) => e.preventDefault()}
-                        className="flex flex-1 flex-col gap-1.5"
+                        className="flex min-w-0 flex-1 flex-col gap-1"
                       >
-                        <p className="text-sm font-medium">{seance.titre}</p>
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <p
+                          className={cn(
+                            "truncate font-semibold",
+                            aujourdhui ? "text-lg text-[#3c4a00]" : "text-base font-medium"
+                          )}
+                        >
+                          {seance.titre}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1">
                           <QualiteBadge qualite={seance.qualite} />
-                          {seance.intensite && <IntensiteBadge intensite={seance.intensite} />}
-                          {seance.statut !== "a_venir" && <StatutBadge statut={seance.statut} />}
-                          <span className="text-xs text-foreground-muted">
+                          <span
+                            className={cn(
+                              aujourdhui ? "text-sm text-[#3c4a00]/70" : "text-sm text-foreground-muted"
+                            )}
+                          >
+                            {seance.heure && `${seance.heure} · `}
                             {seance.dureeEstimeeMinutes} min
                           </span>
                         </div>
@@ -267,11 +301,23 @@ export function CalendrierSemaine({
                       key={sport.id}
                       onPointerDown={(e) => demarrerGlisse(e, "sport", sport.id)}
                       className={cn(
-                        "flex touch-none select-none items-center justify-between gap-2 rounded-xl border border-dashed border-border p-2.5 transition-opacity",
+                        "flex touch-none select-none items-center justify-between gap-2 rounded-xl border p-1.5 transition-opacity",
+                        sport.valide
+                          ? "border-border bg-surface-muted"
+                          : "border-dashed border-border",
                         apercu?.type === "sport" && apercu.id === sport.id && "opacity-30"
                       )}
                     >
-                      <span className="text-sm font-medium text-foreground-muted">{sport.nom}</span>
+                      <div className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-base font-medium text-foreground-muted">
+                          {sport.nom}
+                        </span>
+                        {sport.valide && (
+                          <span className="text-xs text-foreground-muted">
+                            Fatigue {sport.fatigue}/10 · validée
+                          </span>
+                        )}
+                      </div>
                       <button
                         onPointerDown={(e) => e.stopPropagation()}
                         onClick={() => onPlacerAutreSport(sport.id, null)}
@@ -303,6 +349,15 @@ export function CalendrierSemaine({
             ? (itemApercu as Seance).titre
             : (itemApercu as AutreSportPlace).nom}
         </div>
+      )}
+
+      {sportAValider && (
+        <ValiderAutreSportModal
+          nom={sportAValider.nom}
+          fatigueActuelle={sportAValider.fatigue}
+          onValider={(fatigue) => onValiderAutreSport(sportAValider.id, fatigue)}
+          onFermer={() => setSportAValider(null)}
+        />
       )}
     </div>
   );
