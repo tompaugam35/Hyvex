@@ -19,7 +19,7 @@ export function SelecteurAvatar({
       onClick={onFermer}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-md flex-col gap-5 overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl"
+        className="cascade flex max-h-[80dvh] w-full max-w-md flex-col gap-5 overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div>
@@ -27,7 +27,7 @@ export function SelecteurAvatar({
         </div>
 
         <div className="grid grid-cols-4 gap-3">
-          {AVATARS.map((avatar) => (
+          {AVATARS.map((avatar, index) => (
             <button
               key={avatar.id}
               onClick={() => {
@@ -36,14 +36,26 @@ export function SelecteurAvatar({
               }}
               aria-label="Choisir cet avatar"
               className={cn(
-                "flex aspect-square items-center justify-center overflow-hidden rounded-full border-2 transition-colors",
-                valeur === avatar.id ? "border-accent" : "border-transparent"
+                "flex aspect-square items-center justify-center transition-transform",
+                valeur === avatar.id && "scale-110"
               )}
-              style={{ background: avatar.url ? undefined : avatar.couleur }}
+              style={{
+                background: avatar.url ? undefined : avatar.couleur,
+                borderRadius: avatar.url ? undefined : "9999px",
+                overflow: avatar.url ? undefined : "hidden",
+              }}
             >
               {avatar.url && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatar.url} alt="" className="h-full w-full object-cover" />
+                <img
+                  src={avatar.url}
+                  alt=""
+                  className="avatar-orb h-full w-full object-cover"
+                  style={{
+                    animationDuration: `${70 + index * 6}s`,
+                    animationDirection: index % 2 === 0 ? "normal" : "reverse",
+                  }}
+                />
               )}
             </button>
           ))}

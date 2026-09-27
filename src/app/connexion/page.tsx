@@ -55,7 +55,7 @@ export default function ConnexionPage() {
 
   if (mode === "mot-de-passe-oublie") {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-5 py-8">
+      <div className="cascade mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-5 py-8">
         <div>
           <h1 className="text-2xl font-semibold">
             {emailEnvoye ? "Vérifie ta boîte mail" : "Mot de passe oublié"}
@@ -106,7 +106,7 @@ export default function ConnexionPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-5 py-8">
+    <div className="cascade mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-5 py-8">
       <div>
         <h1 className="text-2xl font-semibold">Content de te revoir</h1>
         <p className="mt-1 text-sm text-foreground-muted">

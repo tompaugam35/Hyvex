@@ -60,7 +60,7 @@ export function genererIcsSemaine(seances: Seance[]): string {
         .filter(Boolean)
         .join(" · ");
 
-      const lignes = ["BEGIN:VEVENT", `UID:${seance.id}@hybrid-app`, `DTSTAMP:${horodatage}`];
+      const lignes = ["BEGIN:VEVENT", `UID:${seance.id}@hyvex-app`, `DTSTAMP:${horodatage}`];
 
       if (seance.heure) {
         const [h, m] = seance.heure.split(":").map(Number);
@@ -88,7 +88,7 @@ export function genererIcsSemaine(seances: Seance[]): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Hybrid//FR",
+    "PRODID:-//Hyvex//FR",
     "CALSCALE:GREGORIAN",
     ...evenements,
     "END:VCALENDAR",

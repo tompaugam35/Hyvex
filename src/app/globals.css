@@ -1,33 +1,18 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f5;
-  --surface: #ffffff;
-  --surface-muted: #eeeeec;
-  --foreground: #14151a;
-  --foreground-muted: #6b6d76;
-  --border: #e3e3e0;
-  --accent: #b6ff2e;
-  --accent-foreground: #0f1400;
-  --running: #4da3ff;
-  --strength: #ff6b4a;
-  --power: #b6ff2e;
-  --danger: #ff5c5c;
-}
-
-:root[data-theme="dark"] {
   --background: #0b0c0e;
-  --surface: #16181c;
-  --surface-muted: #1e2126;
-  --foreground: #f4f5f3;
-  --foreground-muted: #9a9ca3;
-  --border: #26292f;
-  --accent: #c6ff3d;
-  --accent-foreground: #0f1400;
-  --running: #5aa9ff;
-  --strength: #ff7a5c;
-  --power: #c6ff3d;
-  --danger: #ff6b6b;
+  --surface: rgb(26 26 26 / 40%);
+  --surface-muted: rgb(32 32 32 / 32%);
+  --foreground: #f4f4f3;
+  --foreground-muted: #9a9a9a;
+  --border: rgb(255 255 255 / 18%);
+  --accent: #f4f4f3;
+  --accent-foreground: #0b0c0e;
+  --running: #f0f0f0;
+  --strength: #c2c2c2;
+  --power: #8f8f8f;
+  --danger: #e2e2e2;
 }
 
 @theme inline {
@@ -48,10 +33,124 @@
 }
 
 body {
-  background: var(--background);
+  background: transparent;
   color: var(--foreground);
 }
 
 * {
   border-color: var(--border);
+}
+
+.fond-site {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  background-color: var(--background);
+  background-image: url("/backgrounds/fond-site.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.55);
+}
+
+/* Variante plus lumineuse du fond, utilisée sur l'écran d'accueil pour que
+   l'image se voie bien derrière la fenêtre en verre liquide du texte. */
+.fond-site-clair {
+  position: fixed;
+  inset: 0;
+  z-index: -9;
+  background-color: var(--background);
+  background-image: url("/backgrounds/fond-site.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  filter: brightness(0.9);
+}
+
+/* Rotation lente des avatars sphériques, en gardant exactement le même motif
+   de points (juste l'image qui tourne sur elle-même). */
+@keyframes avatar-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+.avatar-orb {
+  animation-name: avatar-spin;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+/* Apparition en cascade : les blocs directs d'une page (en-tête, cartes,
+   sections) apparaissent l'un après l'autre à l'ouverture plutôt que tous
+   d'un coup. */
+@keyframes cascade-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    /* "none" et pas "translate3d(0,0,0)" : une transform non-"none", même
+       nulle, crée un nouveau bloc de positionnement pour les descendants en
+       position "fixed" (ex. le bouton "+" flottant), ce qui les décale de
+       leur emplacement voulu (bas de l'écran) vers la position de ce bloc. */
+    transform: none;
+  }
+}
+.cascade > * {
+  /* "backwards" (et pas "both") : une fois l'animation terminée, l'élément
+     revient à son état CSS normal (transform: none, la vraie valeur, pas une
+     matrice résolue) au lieu de rester bloqué sur l'état final de
+     l'animation - sans ça, un descendant en position "fixed" (ex. le bouton
+     "+" flottant, ou n'importe quelle fenêtre modale plus loin dans l'arbre)
+     se retrouve ancré à cet élément au lieu du viewport.
+     Pas de "will-change: transform" ici : contrairement à "transform" en fin
+     d'animation, "will-change: transform" crée un bloc de positionnement en
+     PERMANENCE (pas seulement pendant l'animation), pour n'importe quel
+     descendant en position "fixed"/"absolute", même profondément imbriqué -
+     ça a cassé le positionnement de plusieurs fenêtres modales de l'appli.
+     "translate3d"/l'opacity seule suffisent à un compositing fluide. */
+  animation: cascade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.cascade > *:nth-child(1) { animation-delay: 0ms; }
+.cascade > *:nth-child(2) { animation-delay: 70ms; }
+.cascade > *:nth-child(3) { animation-delay: 140ms; }
+.cascade > *:nth-child(4) { animation-delay: 210ms; }
+.cascade > *:nth-child(5) { animation-delay: 280ms; }
+.cascade > *:nth-child(6) { animation-delay: 350ms; }
+.cascade > *:nth-child(7) { animation-delay: 420ms; }
+.cascade > *:nth-child(8) { animation-delay: 490ms; }
+.cascade > *:nth-child(n + 9) { animation-delay: 560ms; }
+
+/* Pour les éléments qui doivent rester en place en permanence (ex. le bouton
+   "+" flottant du tracker de calories) : pas de fondu/décalage à l'ouverture
+   de la page, ils sont visibles tout de suite. */
+.cascade > .cascade-skip {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cascade > * {
+    animation: none;
+  }
+}
+
+/* Effet "verre liquide" : tous les blocs (cartes, tuiles, boutons secondaires,
+   badges) sont translucides avec un flou d'arrière-plan, pour laisser deviner
+   le fond du site derrière tout en gardant le texte lisible. */
+.bg-surface,
+.bg-surface-muted {
+  backdrop-filter: blur(20px) saturate(160%) contrast(105%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%) contrast(105%);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 25%),
+    inset 0 0 0 1px rgb(255 255 255 / 6%),
+    inset 0 -12px 20px -14px rgb(0 0 0 / 40%),
+    0 8px 30px -12px rgb(0 0 0 / 50%);
 }

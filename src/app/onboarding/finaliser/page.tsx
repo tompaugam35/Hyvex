@@ -47,7 +47,7 @@ export default function FinaliserOnboardingPage() {
   }, [router]);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center gap-4 px-5 py-8 text-center">
+    <div className="cascade mx-auto flex min-h-screen w-full max-w-md flex-col items-center justify-center gap-4 px-5 py-8 text-center">
       {etat === "en_cours" ? (
         <>
           <span className="h-6 w-6 animate-spin rounded-full border-2 border-foreground-muted border-t-transparent" />

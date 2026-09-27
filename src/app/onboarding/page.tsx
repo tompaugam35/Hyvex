@@ -206,6 +206,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-5 py-8">
+      <div className="fond-site-clair" aria-hidden="true" />
       <div className="mb-8 flex items-center gap-3">
         {step > 0 ? (
           <button
@@ -274,7 +275,7 @@ export default function OnboardingPage() {
                 decimales
               />
               <p className="text-xs text-foreground-muted">
-                Optionnel — ça aide ton coach IA à calibrer les charges de musculation et les
+                Optionnel — ça aide ton coach à calibrer les charges de musculation et les
                 exercices à ta morphologie.
               </p>
             </div>
@@ -396,7 +397,7 @@ export default function OnboardingPage() {
               )}
 
               <p className="text-xs text-foreground-muted">
-                Rien n&apos;est obligatoire — plus tu réponds, plus ton coach IA pourra te
+                Rien n&apos;est obligatoire — plus tu réponds, plus ton coach pourra te
                 proposer un programme précis.
               </p>
             </div>
@@ -500,7 +501,7 @@ export default function OnboardingPage() {
                   {seancesHybrid > 1
                     ? `${seancesHybrid} seront générées`
                     : `${seancesHybrid} sera générée`}{" "}
-                  par ton coach IA — les{" "}
+                  par ton coach — les{" "}
                   {sommeAutresSports > 1
                     ? `${sommeAutresSports} autres correspondent`
                     : `${sommeAutresSports} autre correspond`}{" "}
@@ -543,7 +544,7 @@ export default function OnboardingPage() {
                 decimales
               />
               <p className="text-xs text-foreground-muted">
-                Optionnel — ton coach IA calcule à partir de ça tes objectifs quotidiens de
+                Optionnel — ton coach calcule à partir de ça tes objectifs quotidiens de
                 calories et de protéines, glucides, lipides sur la page Calories.
               </p>
             </div>
@@ -638,7 +639,7 @@ export default function OnboardingPage() {
 
 function StepBlock({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="cascade flex flex-col gap-5 rounded-3xl border border-border bg-surface p-6">
       <h1 className="text-2xl font-semibold">{title}</h1>
       {children}
     </div>

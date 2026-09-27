@@ -10,7 +10,7 @@ export function ExporterCalendrier({ seances }: { seances: Seance[] }) {
 
   function exporter() {
     const contenu = genererIcsSemaine(seances);
-    telechargerIcs(contenu, "hybrid-semaine.ics");
+    telechargerIcs(contenu, "hyvex-semaine.ics");
   }
 
   return (

@@ -67,7 +67,7 @@ export function AjoutManuel({
   }
 
   return (
-    <>
+    <div className="cascade-skip">
       <button
         onClick={() => setOuvert(true)}
         aria-label="Ajouter un repas manuellement"
@@ -78,7 +78,7 @@ export function AjoutManuel({
 
       {ouvert && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-          <div className="flex max-h-[85vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl">
+          <div className="cascade flex max-h-[85dvh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl">
             <h2 className="text-lg font-semibold">Ajouter un repas</h2>
 
             <div className="flex flex-col gap-2">
@@ -126,7 +126,7 @@ export function AjoutManuel({
             </div>
 
             <p className="text-xs text-foreground-muted">
-              L&apos;IA calcule les calories et macronutriments à partir des aliments et de leur
+              Le coach calcule les calories et macronutriments à partir des aliments et de leur
               poids.
             </p>
 
@@ -148,6 +148,6 @@ export function AjoutManuel({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

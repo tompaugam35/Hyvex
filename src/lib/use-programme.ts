@@ -20,6 +20,20 @@ const etatInitial: EtatProgramme = {
   programme: null,
 };
 
+// Réessaie une fois après un court délai en cas d'erreur réseau/serveur
+// transitoire. Sans ça, un simple accroc réseau au chargement fait passer
+// `getUser()` ou les requêtes profil/programme en erreur, et l'utilisateur
+// (pourtant bien connecté, avec un compte existant) se retrouve renvoyé sur
+// le quizz d'inscription comme si son compte n'existait pas.
+async function avecRetry<R extends { data: unknown; error: unknown }>(
+  fn: () => PromiseLike<R>
+): Promise<R> {
+  const premier = await fn();
+  if (!premier.error) return premier;
+  await new Promise((resolve) => setTimeout(resolve, 800));
+  return fn();
+}
+
 // Une ligne par jour : une nouvelle saisie le même jour remplace la précédente
 // plutôt que d'empiler plusieurs valeurs pour la même journée sur le graphique.
 async function enregistrerPoidsHistorique(
@@ -37,27 +51,45 @@ async function enregistrerPoidsHistorique(
 export function useProgramme() {
   const [etat, setEtat] = useState<EtatProgramme>(etatInitial);
   const [charge, setCharge] = useState(false);
+  const [erreurChargement, setErreurChargement] = useState(false);
   const etatRef = useRef(etat);
   useEffect(() => {
     etatRef.current = etat;
   });
 
   const rafraichir = useCallback(async () => {
+    setErreurChargement(false);
     const supabase = creerClientNavigateur();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const { data: dataUser, error: erreurUser } = await avecRetry(() => supabase.auth.getUser());
 
+    if (erreurUser) {
+      // Échec réseau persistant après retry : on ne touche pas à l'état
+      // (ni à `charge`) plutôt que de conclure à tort que le compte n'existe
+      // pas. On signale l'échec pour qu'un bouton "Réessayer" puisse
+      // rappeler `rafraichir` plutôt que de rester bloqué sans explication.
+      setErreurChargement(true);
+      return;
+    }
+
+    const user = dataUser.user;
     if (!user) {
       setEtat(etatInitial);
       setCharge(true);
       return;
     }
 
-    const [{ data: ligneProfil }, { data: ligneProgramme }] = await Promise.all([
-      supabase.from("profils").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("programmes").select("*").eq("user_id", user.id).maybeSingle(),
+    const [
+      { data: ligneProfil, error: erreurProfil },
+      { data: ligneProgramme, error: erreurProgramme },
+    ] = await Promise.all([
+      avecRetry(() => supabase.from("profils").select("*").eq("user_id", user.id).maybeSingle()),
+      avecRetry(() => supabase.from("programmes").select("*").eq("user_id", user.id).maybeSingle()),
     ]);
+
+    if (erreurProfil || erreurProgramme) {
+      setErreurChargement(true);
+      return;
+    }
 
     setEtat({
       userId: user.id,
@@ -332,5 +364,6 @@ export function useProgramme() {
     definirPoidsAujourdhui,
     rafraichir,
     charge,
+    erreurChargement,
   };
 }

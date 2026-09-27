@@ -3,17 +3,17 @@ import { Button } from "@/components/ui/Button";
 
 export default function Home() {
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-between px-6 py-12">
+    <div className="cascade mx-auto flex min-h-screen w-full max-w-md flex-col justify-between px-6 py-12">
+      <div className="cascade-skip fond-site-clair" aria-hidden="true" />
       <div />
       <div className="flex flex-col items-center gap-6 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent text-xl font-bold text-accent-foreground">
-          H
-        </span>
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-semibold">Deviens athlète hybride</h1>
-          <p className="text-foreground-muted">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" width={56} height={56} className="h-14 w-14 rounded-2xl" />
+        <div className="flex flex-col gap-2 rounded-3xl border border-border bg-surface p-6">
+          <h1 className="text-xl font-semibold">Deviens athlète hybride</h1>
+          <p className="text-sm text-foreground-muted">
             Course, musculation, explosivité : un seul programme, généré et adapté chaque
-            semaine par ton coach IA.
+            semaine par ton coach.
           </p>
         </div>
       </div>

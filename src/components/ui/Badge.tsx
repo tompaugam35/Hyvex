@@ -19,7 +19,7 @@ export function StatutBadge({
 }) {
   const map = {
     a_venir: { label: "À venir", className: "bg-surface-muted text-foreground-muted" },
-    terminee: { label: "Terminée", className: "bg-accent/20 text-[#4a5c00]" },
+    terminee: { label: "Terminée", className: "bg-accent/20 text-accent" },
     manquee: { label: "Manquée", className: "bg-danger/15 text-danger" },
   } as const;
   const info = map[statut];

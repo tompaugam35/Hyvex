@@ -50,7 +50,7 @@ export default function ReinitialiserMotDePassePage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-5 py-8">
+    <div className="cascade mx-auto flex min-h-screen w-full max-w-md flex-col justify-center gap-6 px-5 py-8">
       {lienInvalide ? (
         <>
           <div>

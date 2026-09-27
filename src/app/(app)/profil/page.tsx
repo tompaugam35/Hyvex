@@ -186,7 +186,8 @@ export default function ProfilPage() {
     router.push("/");
   }
 
-  const avatarActuel = AVATARS.find((a) => a.id === profil.photoUrl);
+  const avatarIndex = AVATARS.findIndex((a) => a.id === profil.photoUrl);
+  const avatarActuel = avatarIndex === -1 ? undefined : AVATARS[avatarIndex];
   const activites = [
     ...profil.qualitesPrioritaires.map((q) => qualiteLabelLong[q]),
     ...profil.autresSports.map((s) => s.nom),
@@ -205,17 +206,28 @@ export default function ProfilPage() {
       : null;
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-xl flex-col gap-4">
+    <div className="cascade mx-auto flex h-full w-full max-w-xl flex-col gap-4">
       <div className="flex items-center gap-5">
         <button
           onClick={() => setAvatarOuvert(true)}
           aria-label="Changer ma photo de profil"
-          className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-muted text-2xl font-semibold"
+          className={cn(
+            "flex h-24 w-24 shrink-0 items-center justify-center text-2xl font-semibold",
+            avatarActuel?.url ? "" : "overflow-hidden rounded-full bg-surface-muted"
+          )}
           style={{ background: avatarActuel && !avatarActuel.url ? avatarActuel.couleur : undefined }}
         >
           {avatarActuel?.url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarActuel.url} alt="" className="h-full w-full object-cover" />
+            <img
+              src={avatarActuel.url}
+              alt=""
+              className="avatar-orb h-full w-full object-cover"
+              style={{
+                animationDuration: `${70 + avatarIndex * 6}s`,
+                animationDirection: avatarIndex % 2 === 0 ? "normal" : "reverse",
+              }}
+            />
           ) : (
             !avatarActuel && profil.prenom[0]
           )}

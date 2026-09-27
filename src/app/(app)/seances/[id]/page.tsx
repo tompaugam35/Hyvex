@@ -28,7 +28,7 @@ export default function SeanceDetailPage() {
   if (!seance) return null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="cascade flex flex-col gap-6">
       <Link href="/dashboard" className="text-sm text-foreground-muted">
         ← Retour au programme
       </Link>

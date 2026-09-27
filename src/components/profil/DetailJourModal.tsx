@@ -2,12 +2,12 @@
 
 import { Button } from "@/components/ui/Button";
 import type { PointEvolution } from "@/types";
-import { dateLocale } from "./GraphiqueEvolution";
+import { dateLocale } from "@/lib/graphique";
 
 export function DetailJourModal({ point, onFermer }: { point: PointEvolution; onFermer: () => void }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <div className="flex w-full max-w-md flex-col gap-5 rounded-t-3xl bg-background p-6 sm:rounded-3xl">
+      <div className="cascade flex w-full max-w-md flex-col gap-5 rounded-t-3xl bg-background p-6 sm:rounded-3xl">
         <h2 className="text-lg font-semibold capitalize">
           {dateLocale(point.date).toLocaleDateString("fr-FR", {
             weekday: "long",

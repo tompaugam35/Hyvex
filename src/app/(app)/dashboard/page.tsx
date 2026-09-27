@@ -49,7 +49,7 @@ export default function DashboardPage() {
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="cascade flex flex-col gap-3">
       <header className="flex items-center justify-between">
         <h1 className="text-base font-semibold">Semaine {programme.numeroSemaine}</h1>
       </header>

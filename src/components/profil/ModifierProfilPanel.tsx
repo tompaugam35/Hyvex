@@ -119,7 +119,7 @@ export function ModifierProfilPanel({
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-5">
-        <div className="flex flex-col gap-8">
+        <div className="cascade flex flex-col gap-8">
           <Question title="Prénom">
             <input
               value={prenom}
@@ -366,7 +366,7 @@ export function ModifierProfilPanel({
                   {seancesHybrid > 1
                     ? `${seancesHybrid} seront générées`
                     : `${seancesHybrid} sera générée`}{" "}
-                  par ton coach IA.
+                  par ton coach.
                 </p>
               )}
             </div>
@@ -407,7 +407,7 @@ export function ModifierProfilPanel({
 
           <p className="text-xs text-foreground-muted">
             Ces changements s&apos;appliqueront à partir de la prochaine semaine générée par ton
-            coach IA.
+            coach.
           </p>
         </div>
       </div>

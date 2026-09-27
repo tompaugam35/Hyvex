@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hybrid — Coach IA athlète hybride",
+  title: "Hyvex — Coach athlète hybride",
   description:
-    "Ton coach IA pour progresser en course, musculation et explosivité en même temps.",
+    "Ton coach pour progresser en course, musculation et explosivité en même temps.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Hybrid",
+    title: "Hyvex",
   },
 };
 
@@ -28,7 +28,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#b6ff2e",
+  themeColor: "#0b0c0e",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -38,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <div className="fond-site" aria-hidden="true" />
         {children}
       </body>
     </html>

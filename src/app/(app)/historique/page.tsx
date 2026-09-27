@@ -52,7 +52,7 @@ export default function HistoriquePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="cascade flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold">Historique</h1>
         <p className="text-sm text-foreground-muted">

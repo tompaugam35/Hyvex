@@ -19,7 +19,7 @@ export default function CaloriesPage() {
   const objectifs = profil?.objectifsNutrition;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="cascade flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold">Calories</h1>
         <p className="text-sm text-foreground-muted">Aujourd&apos;hui</p>

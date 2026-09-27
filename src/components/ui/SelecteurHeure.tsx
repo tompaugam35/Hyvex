@@ -28,7 +28,7 @@ export function SelecteurHeure({
           onClick={() => setOuvert(false)}
         >
           <div
-            className="flex w-full max-w-md flex-col items-center gap-5 rounded-t-3xl bg-background p-6 sm:rounded-3xl"
+            className="cascade flex w-full max-w-md flex-col items-center gap-5 rounded-t-3xl bg-background p-6 sm:rounded-3xl"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-lg font-semibold">Heure de la séance</h2>

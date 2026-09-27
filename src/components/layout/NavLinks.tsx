@@ -93,10 +93,9 @@ export function Sidebar() {
   return (
     <aside className="hidden md:flex md:w-60 md:flex-col md:gap-1 md:border-r md:border-border md:p-4">
       <div className="mb-6 flex items-center gap-2 px-2">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-sm font-bold text-accent-foreground">
-          H
-        </span>
-        <span className="text-lg font-semibold">Hybrid</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logo.png" alt="" width={32} height={32} className="h-8 w-8 rounded-lg" />
+        <span className="text-lg font-semibold">Hyvex</span>
       </div>
       {navItems.map((item) => {
         const active = pathname === item.href;

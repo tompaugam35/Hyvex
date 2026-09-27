@@ -45,7 +45,7 @@ export function BilanSemaine({
   }
 
   return (
-    <>
+    <div>
       <div className="flex flex-col items-center gap-2 pb-2 pt-4 text-center">
         <Button
           variant="secondary"
@@ -64,13 +64,13 @@ export function BilanSemaine({
 
       {etat !== "ferme" && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-          <div className="flex max-h-[85vh] w-full max-w-md flex-col gap-5 overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl">
+          <div className="cascade flex max-h-[85dvh] w-full max-w-md flex-col gap-5 overflow-y-auto rounded-t-3xl bg-background p-6 sm:rounded-3xl">
             {etat === "confirmation" && (
               <>
                 <div>
                   <h2 className="text-lg font-semibold">Faire le bilan de ta semaine ?</h2>
                   <p className="mt-2 text-sm text-foreground-muted">
-                    Ton coach IA va analyser tes séances de la semaine {programme.numeroSemaine} et
+                    Ton coach va analyser tes séances de la semaine {programme.numeroSemaine} et
                     préparer le programme de la semaine {programme.numeroSemaine + 1}.
                   </p>
                 </div>
@@ -88,7 +88,7 @@ export function BilanSemaine({
             {etat === "chargement" && (
               <div className="flex flex-col items-center gap-4 py-10 text-center">
                 <span className="h-6 w-6 animate-spin rounded-full border-2 border-foreground-muted border-t-transparent" />
-                <p className="text-sm text-foreground-muted">Ton coach IA analyse ta semaine…</p>
+                <p className="text-sm text-foreground-muted">Ton coach analyse ta semaine…</p>
               </div>
             )}
 
@@ -111,7 +111,7 @@ export function BilanSemaine({
 
                 <div className="flex flex-col gap-2">
                   <h3 className="text-xs font-semibold text-foreground-muted">
-                    Ce que l&apos;IA a constaté
+                    Ce que ton coach a constaté
                   </h3>
                   <div className="flex flex-col gap-2">
                     {resultat.bilan.constats.map((constat, i) => (
@@ -130,7 +130,7 @@ export function BilanSemaine({
                   <div className="flex flex-col gap-2">
                     {resultat.bilan.ajustements.map((ajustement, i) => (
                       <div key={i} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#5c6b0f]" />
+                        <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
                         <p>{ajustement}</p>
                       </div>
                     ))}
@@ -170,6 +170,6 @@ export function BilanSemaine({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

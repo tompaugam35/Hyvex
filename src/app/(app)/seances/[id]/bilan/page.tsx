@@ -91,7 +91,7 @@ export default function BilanSeancePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="cascade flex flex-col gap-6">
       <Link href={`/seances/${seance.id}`} className="text-sm text-foreground-muted">
         ← Retour à la séance
       </Link>

@@ -1,16 +1,16 @@
 {
-  "name": "Hybrid — Coach IA athlète hybride",
-  "short_name": "Hybrid",
-  "description": "Ton coach IA pour progresser en course, musculation et explosivité en même temps.",
+  "name": "Hyvex — Coach athlète hybride",
+  "short_name": "Hyvex",
+  "description": "Ton coach pour progresser en course, musculation et explosivité en même temps.",
   "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#0b0c0e",
-  "theme_color": "#b6ff2e",
+  "theme_color": "#0b0c0e",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     }
   ]

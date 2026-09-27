@@ -17,6 +17,6 @@ export const qualiteInfo: Record<
   explosivite: {
     label: "Explosivité",
     colorVar: "--power",
-    className: "bg-power/15 text-[#5c6b0f]",
+    className: "bg-power/15 text-power",
   },
 };

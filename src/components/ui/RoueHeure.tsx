@@ -46,6 +46,14 @@ function Colonne({
     }, 120);
   }
 
+  // Un simple toucher sur une valeur l'amène directement au centre, sans avoir
+  // à faire défiler précisément la roue à la main.
+  function surToucheValeur(v: number) {
+    const el = ref.current;
+    if (el) el.scrollTo({ top: valeurs.indexOf(v) * HAUTEUR_ITEM, behavior: "smooth" });
+    if (v !== valeur) onChange(v);
+  }
+
   return (
     <div
       ref={ref}
@@ -55,16 +63,18 @@ function Colonne({
     >
       <div style={{ height: HAUTEUR_ESPACEUR }} />
       {valeurs.map((v) => (
-        <div
+        <button
           key={v}
+          type="button"
+          onClick={() => surToucheValeur(v)}
           style={{ height: HAUTEUR_ITEM }}
           className={cn(
-            "flex snap-center items-center justify-center text-2xl font-semibold tabular-nums transition-colors",
+            "flex w-full snap-center items-center justify-center text-2xl font-semibold tabular-nums transition-colors",
             v === valeur ? "text-foreground" : "text-foreground-muted/40"
           )}
         >
           {String(v).padStart(2, "0")}
-        </div>
+        </button>
       ))}
       <div style={{ height: HAUTEUR_ESPACEUR }} />
     </div>

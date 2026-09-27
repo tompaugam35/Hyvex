@@ -237,7 +237,7 @@ export function CalendrierSemaine({
                   </span>
                 )}
                 {jourTermine && (
-                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[11px] font-semibold text-[#4a5c00]">
+                  <span className="rounded-full bg-accent/20 px-2 py-0.5 text-[11px] font-semibold text-accent">
                     Terminée
                   </span>
                 )}
@@ -266,19 +266,15 @@ export function CalendrierSemaine({
                       >
                         <p
                           className={cn(
-                            "truncate font-semibold",
-                            aujourdhui ? "text-lg text-[#3c4a00]" : "text-base font-medium"
+                            "truncate font-semibold text-foreground",
+                            aujourdhui ? "text-lg" : "text-base font-medium"
                           )}
                         >
                           {seance.titre}
                         </p>
                         <div className="flex flex-wrap items-center gap-1">
                           <QualiteBadge qualite={seance.qualite} />
-                          <span
-                            className={cn(
-                              aujourdhui ? "text-sm text-[#3c4a00]/70" : "text-sm text-foreground-muted"
-                            )}
-                          >
+                          <span className="text-sm text-foreground-muted">
                             {seance.heure && `${seance.heure} · `}
                             {seance.dureeEstimeeMinutes} min
                           </span>

@@ -26,7 +26,7 @@ export function ModifierPoidsModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <div className="flex w-full max-w-md flex-col gap-5 rounded-t-3xl bg-background p-6 sm:rounded-3xl">
+      <div className="cascade flex w-full max-w-md flex-col gap-5 rounded-t-3xl bg-background p-6 sm:rounded-3xl">
         <div>
           <h2 className="text-lg font-semibold">Ton poids aujourd&apos;hui</h2>
           <p className="mt-1 text-sm text-foreground-muted">

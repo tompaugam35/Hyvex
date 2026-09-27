@@ -6,14 +6,14 @@ export interface OptionAvatar {
 }
 
 export const AVATARS: OptionAvatar[] = [
-  { id: "particle-1", url: "/avatars/particle-1.svg", couleur: "#000000" },
-  { id: "particle-2", url: "/avatars/particle-2.svg", couleur: "#000000" },
-  { id: "particle-3", url: "/avatars/particle-3.svg", couleur: "#000000" },
-  { id: "particle-4", url: "/avatars/particle-4.svg", couleur: "#000000" },
-  { id: "particle-5", url: "/avatars/particle-5.svg", couleur: "#000000" },
-  { id: "particle-6", url: "/avatars/particle-6.svg", couleur: "#000000" },
-  { id: "particle-7", url: "/avatars/particle-7.svg", couleur: "#000000" },
-  { id: "particle-8", url: "/avatars/particle-8.svg", couleur: "#000000" },
-  { id: "particle-9", url: "/avatars/particle-9.svg", couleur: "#000000" },
-  { id: "particle-10", url: "/avatars/particle-10.svg", couleur: "#000000" },
+  { id: "sphere-1", url: "/avatars/sphere-1.png", couleur: "#5a5a5a" },
+  { id: "sphere-2", url: "/avatars/sphere-2.png", couleur: "#5f5f5f" },
+  { id: "sphere-3", url: "/avatars/sphere-3.png", couleur: "#4e4e4e" },
+  { id: "sphere-4", url: "/avatars/sphere-4.png", couleur: "#3e5264" },
+  { id: "sphere-5", url: "/avatars/sphere-5.png", couleur: "#04417a" },
+  { id: "sphere-6", url: "/avatars/sphere-6.png", couleur: "#052288" },
+  { id: "sphere-7", url: "/avatars/sphere-7.png", couleur: "#3d556c" },
+  { id: "sphere-8", url: "/avatars/sphere-8.png", couleur: "#394a5a" },
+  { id: "sphere-9", url: "/avatars/sphere-9.png", couleur: "#1d3559" },
+  { id: "sphere-10", url: "/avatars/sphere-10.png", couleur: "#006075" },
 ];
