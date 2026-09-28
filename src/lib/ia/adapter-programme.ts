@@ -20,7 +20,7 @@ import {
 } from "./contexte";
 import { seancesHybrideDepuisTotal } from "./mapper";
 
-const MODEL = "claude-3-5-sonnet-20241022";
+const MODEL = "claude-opus-4-1-20250805";
 
 const ANALYSER_TOOL = {
   name: "analyser_et_adapter",
