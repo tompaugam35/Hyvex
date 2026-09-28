@@ -168,41 +168,38 @@ function CarteBilan({
       />
 
       <div style={{ position: "relative", display: "flex", flexDirection: "column", height: "100%" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="" width={14} height={14} style={{ borderRadius: 4 }} />
-          <span style={{ fontSize: 11, letterSpacing: "0.06em", color: "#9a9a9a" }}>hyvex</span>
-        </div>
-
-        {bilan.meilleurMoisAnnee && (
-          <div
-            style={{
-              marginTop: 14,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              background: "rgba(255,255,255,0.10)",
-              borderRadius: 20,
-              padding: "4px 9px",
-              width: "fit-content",
-            }}
-          >
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#f4f4f3" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.png" alt="" width={14} height={14} style={{ borderRadius: 4 }} />
+            <span style={{ fontSize: 11, letterSpacing: "0.06em", color: "#9a9a9a" }}>hyvex</span>
+          </div>
+          {bilan.meilleurMoisAnnee && (
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                color: "#f4f4f3",
+                background: "rgba(255,255,255,0.10)",
+                borderRadius: 20,
+                padding: "4px 9px",
+              }}
+            >
               meilleur mois de l&apos;année
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
-        <div style={{ marginTop: 12, fontSize: 22, fontWeight: 500, lineHeight: 1.1, textTransform: "capitalize" }}>
+        <div style={{ marginTop: 14, fontSize: 22, fontWeight: 500, lineHeight: 1.1, textTransform: "capitalize" }}>
           {bilan.libelleMois.split(" ")[0]}
         </div>
         <div style={{ fontSize: 11, color: "#9a9a9a", marginTop: 2 }}>
           le bilan de {bilan.prenom}
         </div>
 
-        <div style={{ marginTop: 14 }}>
+        <div style={{ marginTop: 12 }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-            <span style={{ fontSize: 46, fontWeight: 500, lineHeight: 1 }}>{bilan.nbSeances}</span>
+            <span style={{ fontSize: 42, fontWeight: 500, lineHeight: 1 }}>{bilan.nbSeances}</span>
             <span style={{ fontSize: 11, color: "#9a9a9a" }}>
               séances
               <br />
@@ -225,7 +222,7 @@ function CarteBilan({
           </div>
         </div>
 
-        <div style={{ marginTop: 13, display: "flex", flexDirection: "column", gap: 5 }}>
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 5 }}>
           {(Object.keys(bilan.parQualite) as Qualite[]).map((q) => (
             <div key={q} style={{ display: "flex", alignItems: "center", gap: 7 }}>
               <span style={{ fontSize: 10, color: "#9a9a9a", width: 58 }}>{labelQualite[q]}</span>
@@ -245,7 +242,7 @@ function CarteBilan({
           ))}
         </div>
 
-        <div style={{ marginTop: 13, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
           <StatBlock label="distance" valeur={formaterDistance(bilan.distanceTotaleMetres)} />
           <StatBlock label="dénivelé +" valeur={`${Math.round(bilan.deniveleTotalMetres)} m`} />
           <StatBlock label="temps total" valeur={formaterDuree(bilan.dureeTotaleSecondes)} />
@@ -260,20 +257,23 @@ function CarteBilan({
         {bilan.plusLongueSortieMetres !== null && (
           <div
             style={{
-              marginTop: 7,
+              marginTop: 6,
               background: "#16181c",
               borderRadius: 12,
-              padding: "9px 11px",
+              padding: "8px 11px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
             }}
           >
             <div style={{ fontSize: 9, color: "#9a9a9a" }}>record du mois</div>
-            <div style={{ fontSize: 13, fontWeight: 500, marginTop: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 500 }}>
               sortie de {formaterDistance(bilan.plusLongueSortieMetres)}
             </div>
           </div>
         )}
 
-        <div style={{ marginTop: "auto", paddingTop: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ marginTop: "auto", paddingTop: 8, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           {bilan.semainesTotal > 0 ? (
             <span style={{ fontSize: 9, color: "#9a9a9a" }}>
               {bilan.semainesReussies} semaine{bilan.semainesReussies > 1 ? "s" : ""} sur{" "}
@@ -291,7 +291,7 @@ function CarteBilan({
 
 function StatBlock({ label, valeur }: { label: string; valeur: string }) {
   return (
-    <div style={{ background: "#16181c", borderRadius: 12, padding: "9px 11px" }}>
+    <div style={{ background: "#16181c", borderRadius: 12, padding: "8px 11px" }}>
       <div style={{ fontSize: 9, color: "#9a9a9a" }}>{label}</div>
       <div style={{ fontSize: 13, fontWeight: 500, marginTop: 1 }}>{valeur}</div>
     </div>

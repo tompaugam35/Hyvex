@@ -40,7 +40,7 @@ export default function CaloriesPage() {
           </p>
           <p className="text-sm text-foreground-muted">calories aujourd&apos;hui</p>
         </div>
-        <div className="grid w-full grid-cols-3 gap-3">
+        <div className="grid w-full grid-cols-3 gap-2">
           <Macro
             label="Protéines"
             grammes={totaux.proteinesG}
@@ -125,9 +125,9 @@ function Macro({
   couleur: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-1 rounded-xl bg-surface-muted p-3">
+    <div className="flex flex-col items-center gap-1 rounded-xl bg-surface-muted px-2 py-3">
       <span className={`h-2 w-2 rounded-full ${couleur}`} />
-      <p className="text-lg font-semibold">
+      <p className="whitespace-nowrap text-base font-semibold">
         {arrondi(grammes)}g
         {objectifGrammes !== undefined && (
           <span className="text-xs font-normal text-foreground-muted">
