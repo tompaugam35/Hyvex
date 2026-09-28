@@ -9,6 +9,8 @@ import {
 } from "@/lib/ia/mapper";
 import type { BilanHebdomadaire } from "@/types";
 
+export const maxDuration = 60;
+
 export async function POST() {
   const supabase = await creerClientServeur();
 
