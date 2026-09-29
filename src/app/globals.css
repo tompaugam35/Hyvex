@@ -154,3 +154,44 @@ body {
     inset 0 -12px 20px -14px rgb(0 0 0 / 40%),
     0 8px 30px -12px rgb(0 0 0 / 50%);
 }
+
+/* Apparition au défilement des pages du site (accueil, tarifs), pilotée par
+   le composant Revelation. */
+[data-revele] {
+  opacity: 0;
+  translate: 0 28px;
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    translate 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-revele][data-visible] {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-revele] {
+    opacity: 1;
+    translate: none;
+    transition: none;
+  }
+}
+
+/* Paywall : sans abonnement, les données personnelles (séances, calories,
+   poids…) sont floutées ; l'interface et les fonctionnalités restent visibles. */
+.donnee {
+  transition: filter 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.verrouille .donnee {
+  filter: blur(7px);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 767px) {
+  .verrouille .bouton-flottant {
+    bottom: calc(10.5rem + env(safe-area-inset-bottom));
+  }
+}

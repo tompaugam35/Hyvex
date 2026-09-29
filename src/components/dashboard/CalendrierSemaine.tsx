@@ -181,9 +181,9 @@ export function CalendrierSemaine({
                     className="h-2 w-2 shrink-0 rounded-full"
                     style={{ backgroundColor: `var(${qualiteInfo[seance.qualite].colorVar})` }}
                   />
-                  {seance.titre}
+                  <span className="donnee">{seance.titre}</span>
                 </span>
-                <span className="text-xs text-foreground-muted">
+                <span className="donnee text-xs text-foreground-muted">
                   {seance.dureeEstimeeMinutes} min
                 </span>
               </div>
@@ -198,7 +198,7 @@ export function CalendrierSemaine({
                 )}
               >
                 <span className="h-2 w-2 shrink-0 rounded-full bg-foreground-muted" />
-                {sport.nom}
+                <span className="donnee">{sport.nom}</span>
               </div>
             ))}
           </div>
@@ -266,7 +266,7 @@ export function CalendrierSemaine({
                       >
                         <p
                           className={cn(
-                            "truncate font-semibold text-foreground",
+                            "donnee truncate font-semibold text-foreground",
                             aujourdhui ? "text-lg" : "text-base font-medium"
                           )}
                         >
@@ -274,7 +274,7 @@ export function CalendrierSemaine({
                         </p>
                         <div className="flex flex-wrap items-center gap-1">
                           <QualiteBadge qualite={seance.qualite} />
-                          <span className="text-sm text-foreground-muted">
+                          <span className="donnee text-sm text-foreground-muted">
                             {seance.heure && `${seance.heure} · `}
                             {seance.dureeEstimeeMinutes} min
                           </span>
@@ -305,11 +305,11 @@ export function CalendrierSemaine({
                       )}
                     >
                       <div className="flex min-w-0 flex-col gap-0.5">
-                        <span className="text-base font-medium text-foreground-muted">
+                        <span className="donnee text-base font-medium text-foreground-muted">
                           {sport.nom}
                         </span>
                         {sport.valide && (
-                          <span className="text-xs text-foreground-muted">
+                          <span className="donnee text-xs text-foreground-muted">
                             Fatigue {sport.fatigue}/10 · validée
                           </span>
                         )}
@@ -341,9 +341,11 @@ export function CalendrierSemaine({
           }}
           className="pointer-events-none z-50 rounded-xl border border-accent bg-surface px-3 py-2 text-sm font-medium shadow-lg"
         >
-          {apercu.type === "seance"
-            ? (itemApercu as Seance).titre
-            : (itemApercu as AutreSportPlace).nom}
+          <span className="donnee">
+            {apercu.type === "seance"
+              ? (itemApercu as Seance).titre
+              : (itemApercu as AutreSportPlace).nom}
+          </span>
         </div>
       )}
 

@@ -95,21 +95,21 @@ export default function HistoriquePage() {
                 {entree ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <p className="font-medium">{entree.titre}</p>
+                      <p className="donnee font-medium">{entree.titre}</p>
                       <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${qualiteInfo[qualite].className}`}>
                         {qualiteInfo[qualite].label}
                       </span>
                     </div>
-                    <p className="text-sm capitalize text-foreground-muted">
+                    <p className="donnee text-sm capitalize text-foreground-muted">
                       {formaterDate(entree.date)}
                     </p>
                     {entree.distanceMetres !== undefined && entree.dureeSecondes !== undefined && (
-                      <p className="text-sm text-foreground-muted">
+                      <p className="donnee text-sm text-foreground-muted">
                         {formaterCourse(entree.distanceMetres, entree.dureeSecondes)}
                       </p>
                     )}
                     {(entree.terrain || !!entree.deniveleMetres) && (
-                      <p className="text-sm text-foreground-muted">
+                      <p className="donnee text-sm text-foreground-muted">
                         {[
                           entree.terrain && labelTerrain[entree.terrain],
                           entree.deniveleMetres ? `D+ ${entree.deniveleMetres} m` : null,
@@ -119,7 +119,7 @@ export default function HistoriquePage() {
                       </p>
                     )}
                     {(entree.rpe !== undefined || entree.fatigue !== undefined) && (
-                      <p className="text-sm text-foreground-muted">
+                      <p className="donnee text-sm text-foreground-muted">
                         {entree.rpe !== undefined &&
                           `${qualite === "course" ? "Ressenti" : "RPE"} ${entree.rpe}/10`}
                         {entree.rpe !== undefined && entree.fatigue !== undefined && " · "}

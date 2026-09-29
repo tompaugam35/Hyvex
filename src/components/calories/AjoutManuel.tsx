@@ -69,9 +69,10 @@ export function AjoutManuel({
   return (
     <div className="cascade-skip">
       <button
+        data-pro
         onClick={() => setOuvert(true)}
         aria-label="Ajouter un repas manuellement"
-        className="fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-3xl font-semibold leading-none text-accent-foreground shadow-lg transition-opacity hover:opacity-90 md:bottom-8"
+        className="bouton-flottant fixed bottom-24 right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-3xl font-semibold leading-none text-accent-foreground shadow-lg transition-opacity hover:opacity-90 md:bottom-8"
       >
         +
       </button>

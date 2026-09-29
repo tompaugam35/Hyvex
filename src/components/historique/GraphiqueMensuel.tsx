@@ -63,7 +63,7 @@ export function GraphiqueMensuel({ entrees }: { entrees: JournalEntree[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex h-28 items-end gap-[3px]">
+      <div className="donnee flex h-28 items-end gap-[3px]">
         {jours.map((jour) => {
           const cle = cleDate(jour);
           const entreesJour = entreesParJour.get(cle) ?? [];

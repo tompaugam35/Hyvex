@@ -1,0 +1,269 @@
+.page {
+  position: relative;
+  background: #050506;
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100svh;
+  overflow-x: hidden;
+}
+
+.nav {
+  position: sticky;
+  top: 14px;
+  z-index: 5;
+  margin: 14px auto 0;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(20 20 22 / 60%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.nav img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+}
+.nav a {
+  font-size: 13px;
+  padding: 7px 11px;
+  border-radius: 999px;
+  color: var(--foreground-muted);
+  white-space: nowrap;
+}
+.nav a.actif {
+  color: var(--foreground);
+}
+.nav a.bouton {
+  background: var(--foreground);
+  color: #050506;
+  font-weight: 500;
+  margin-left: 4px;
+}
+.nav a.logo {
+  padding: 0;
+}
+
+.scene {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 16px 0;
+  display: flex;
+  flex-direction: column;
+}
+.geant {
+  text-align: center;
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 0.8;
+  font-size: clamp(96px, 27vw, 300px);
+  user-select: none;
+}
+
+.cartes {
+  position: relative;
+  margin-top: -0.42em;
+  font-size: clamp(96px, 27vw, 300px);
+  display: grid;
+  gap: 14px;
+}
+.carte {
+  font-size: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 20px 20px;
+  border-radius: 24px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  background: rgb(28 28 30 / 45%);
+  backdrop-filter: blur(22px) saturate(120%);
+  -webkit-backdrop-filter: blur(22px) saturate(120%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+}
+.plan {
+  font-size: 13px;
+  color: var(--foreground-muted);
+}
+.prix {
+  margin-top: 12px;
+  font-size: 40px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.prix small {
+  font-size: 22px;
+  font-weight: 400;
+  color: #cfcfcf;
+  letter-spacing: 0;
+}
+.sousPrix {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--foreground-muted);
+}
+.liste {
+  list-style: none;
+  padding: 0;
+  margin: 22px 0 24px;
+  display: grid;
+  gap: 13px;
+}
+.liste li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 13px;
+  color: #cfcfcf;
+  line-height: 1.35;
+}
+.coche {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 10%);
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--foreground);
+}
+.cta {
+  margin-top: auto;
+  display: block;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 13px;
+  border-radius: 999px;
+  background: #0c0c0d;
+  border: 1px solid rgb(255 255 255 / 12%);
+}
+.badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 11px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--foreground);
+  color: #050506;
+  font-weight: 500;
+}
+.ancien {
+  font-size: 20px;
+  font-weight: 400;
+  color: #a3a3a6;
+  text-decoration: line-through;
+  margin-right: 8px;
+  letter-spacing: 0;
+}
+.gain {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+  color: var(--foreground);
+}
+
+.vedette {
+  order: -1;
+  background: linear-gradient(180deg, rgb(58 58 62 / 72%) 0%, rgb(24 24 27 / 80%) 45%, rgb(18 18 20 / 82%) 100%);
+  border-color: rgb(255 255 255 / 32%);
+  box-shadow:
+    0 40px 90px -30px rgb(255 255 255 / 22%),
+    inset 0 1px 0 rgb(255 255 255 / 35%);
+}
+.vedette::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(120% 55% at 50% 0%, rgb(255 255 255 / 10%), transparent 65%);
+}
+.vedette::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: 1px;
+  background: linear-gradient(120deg, transparent 30%, rgb(255 255 255 / 75%) 50%, transparent 70%) 0 0 / 250% 100%;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: reflet 5s ease-in-out infinite;
+}
+@keyframes reflet {
+  0%,
+  100% {
+    background-position: 120% 0;
+  }
+  50% {
+    background-position: -20% 0;
+  }
+}
+.vedette > :not(.badge) {
+  position: relative;
+}
+.vedette .plan {
+  color: var(--foreground);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.vedette .coche {
+  background: var(--foreground);
+  color: #050506;
+}
+.vedette .liste li {
+  color: var(--foreground);
+}
+.vedette .sousPrix {
+  color: #c4c4c6;
+}
+.vedette .cta {
+  background: var(--foreground);
+  color: #050506;
+  border-color: var(--foreground);
+}
+
+.note {
+  text-align: center;
+  margin: 44px auto 60px;
+  max-width: 420px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--foreground-muted);
+  padding: 0 16px;
+}
+
+@media (min-width: 860px) {
+  .scene {
+    padding-top: 56px;
+  }
+  .cartes {
+    grid-template-columns: repeat(2, minmax(0, 380px));
+    justify-content: center;
+    column-gap: 22px;
+    margin-top: -0.36em;
+  }
+  .carte {
+    min-height: 470px;
+  }
+  .vedette {
+    transform: translateY(-18px);
+    padding-top: 28px;
+    z-index: 1;
+  }
+}

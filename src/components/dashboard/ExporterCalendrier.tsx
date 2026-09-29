@@ -15,7 +15,7 @@ export function ExporterCalendrier({ seances }: { seances: Seance[] }) {
 
   return (
     <div className="flex flex-col items-center gap-2 pb-2 pt-2 text-center">
-      <Button variant="secondary" onClick={exporter} disabled={!peutExporter} className="w-full">
+      <Button data-pro variant="secondary" onClick={exporter} disabled={!peutExporter} className="w-full">
         Ajouter la semaine à mon calendrier
       </Button>
       {!peutExporter && (

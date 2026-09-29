@@ -10,6 +10,7 @@ import { useProgramme } from "@/lib/use-programme";
 import { useStrava } from "@/lib/use-strava";
 import { useBilanMensuel } from "@/lib/use-bilan-mensuel";
 import { joursDeLaSemaineEnCours } from "@/lib/semaine";
+import { useAcces } from "@/components/paywall/AccesContexte";
 
 export default function DashboardPage() {
   const { profil, programme, placerSeance, placerAutreSport, validerAutreSport, rafraichir } =
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   const { bilan: bilanMensuel, ouvert: bilanMensuelOuvert, fermer: fermerBilanMensuel } =
     useBilanMensuel(profil);
   const synchroLancee = useRef(false);
+  const { verrouille } = useAcces();
 
   useEffect(() => {
     // Dès que l'app s'ouvre avec Strava connecté, on va chercher les courses
@@ -57,11 +59,11 @@ export default function DashboardPage() {
       <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-3 py-2.5">
         <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-muted">
           <div
-            className="h-full rounded-full bg-accent transition-all"
+            className="donnee h-full rounded-full bg-accent transition-all"
             style={{ width: `${pourcentageComplete}%` }}
           />
         </div>
-        <span className="shrink-0 text-sm font-medium text-foreground-muted">
+        <span className="donnee shrink-0 text-sm font-medium text-foreground-muted">
           {seancesCompletees}/{totalActivites} séances
         </span>
       </div>
@@ -83,7 +85,7 @@ export default function DashboardPage() {
 
       <SeancesEnAttente seances={seancesEnAttente} onPlacer={placerSeance} />
 
-      {bilanMensuelOuvert && bilanMensuel && (
+      {!verrouille && bilanMensuelOuvert && bilanMensuel && (
         <BilanMensuelModal bilan={bilanMensuel} onFermer={fermerBilanMensuel} />
       )}
     </div>

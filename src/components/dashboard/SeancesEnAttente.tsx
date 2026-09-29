@@ -43,7 +43,7 @@ export function SeancesEnAttente({
               className="flex min-w-0 items-center justify-between gap-2 rounded-xl bg-surface-muted p-2.5"
             >
               <Link href={`/seances/${seance.id}`} className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="truncate text-sm font-medium">{seance.titre}</p>
+                <p className="donnee truncate text-sm font-medium">{seance.titre}</p>
                 <div className="flex items-center gap-1.5">
                   <QualiteBadge qualite={seance.qualite} />
                   <span className="text-xs text-foreground-muted">{seance.jour}</span>

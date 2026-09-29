@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { PointEvolution } from "@/types";
+import { useAcces } from "@/components/paywall/AccesContexte";
 import { cheminLisse, dateLocale, echelle as echelleBase, positionX } from "@/lib/graphique";
 
 const LARGEUR = 300;
@@ -24,6 +25,7 @@ export function GraphiqueEvolution({
   points: PointEvolution[];
   onSelectionner: (point: PointEvolution) => void;
 }) {
+  const { verrouille } = useAcces();
   const indexAvecDonnee = points
     .map((p, i) => (p.poidsKg !== undefined || p.fatigue !== undefined ? i : -1))
     .filter((i) => i >= 0);
@@ -92,6 +94,9 @@ export function GraphiqueEvolution({
             <stop offset="0%" stopColor="#f4f4f3" stopOpacity="0.55" />
             <stop offset="100%" stopColor="#f4f4f3" stopOpacity="0" />
           </linearGradient>
+          <filter id="flouDonnees" filterUnits="userSpaceOnUse" x="-50" y="-50" width={LARGEUR + 100} height={HAUT_COURBE + HAUTEUR_COURBE + 124}>
+            <feGaussianBlur stdDeviation="4" />
+          </filter>
         </defs>
 
         {indexAvecDonnee.map((i) => (
@@ -108,6 +113,7 @@ export function GraphiqueEvolution({
           />
         ))}
 
+        <g filter={verrouille ? "url(#flouDonnees)" : undefined}>
         {cheminAire && <path d={cheminAire} fill="url(#degradePoids)" />}
         {chemin && <path d={chemin} fill="none" stroke="#f4f4f3" strokeWidth={2} />}
         {cheminFatigue && <path d={cheminFatigue} fill="none" stroke="#9a9a9a" strokeWidth={1.5} strokeOpacity={0.8} />}
@@ -122,6 +128,7 @@ export function GraphiqueEvolution({
         {selectionne !== null && !(echellePoids && points[selectionne].poidsKg !== undefined) && points[selectionne].fatigue !== undefined && (
           <circle cx={x(selectionne, points.length)} cy={echelleFatigue(points[selectionne].fatigue!)} r={5} fill="#0b0c0e" stroke="#9a9a9a" strokeWidth={2} />
         )}
+        </g>
 
         {indexAvecDonnee.map((i) => (
           <rect

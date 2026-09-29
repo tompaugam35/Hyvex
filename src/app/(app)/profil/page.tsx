@@ -9,6 +9,7 @@ import { GraphiqueEvolution } from "@/components/profil/GraphiqueEvolution";
 import { ModifierPoidsModal } from "@/components/profil/ModifierPoidsModal";
 import { DetailJourModal } from "@/components/profil/DetailJourModal";
 import { AbonnementModal } from "@/components/profil/AbonnementModal";
+import { useAcces } from "@/components/paywall/AccesContexte";
 import { useProgramme } from "@/lib/use-programme";
 import { useStrava } from "@/lib/use-strava";
 import { usePoidsFatigue } from "@/lib/use-poids-fatigue";
@@ -76,7 +77,7 @@ function StatTuile({
   return (
     <div className="flex flex-col items-center gap-2 px-2 py-5 text-center">
       <span className="text-foreground-muted">{icone}</span>
-      <p className="text-lg font-semibold">{valeur}</p>
+      <p className="donnee text-lg font-semibold">{valeur}</p>
       <p className="text-[11px] text-foreground-muted">{label}</p>
     </div>
   );
@@ -149,6 +150,7 @@ const messageRetourStrava = {
 export default function ProfilPage() {
   const { profil, mettreAJourProfil, definirPhotoProfil, definirPoidsAujourdhui } = useProgramme();
   const router = useRouter();
+  const { verrouille, ouvrirPaywall } = useAcces();
   const [modificationOuverte, setModificationOuverte] = useState(false);
   const [avatarOuvert, setAvatarOuvert] = useState(false);
   const [poidsOuvert, setPoidsOuvert] = useState(false);
@@ -234,7 +236,7 @@ export default function ProfilPage() {
         </button>
         <div className="min-w-0">
           <p className="truncate text-3xl font-bold tracking-tight">{profil.prenom}</p>
-          <p className="mt-1 truncate text-sm text-foreground-muted">
+          <p className="donnee mt-1 truncate text-sm text-foreground-muted">
             {activites || "Aucune activité"}
           </p>
         </div>
@@ -257,7 +259,7 @@ export default function ProfilPage() {
       <Card className="flex flex-col gap-3">
         <div className="flex items-start justify-between gap-3">
           <span className="shrink-0 text-sm text-foreground-muted">Progression</span>
-          <span className="text-right text-sm">
+          <span className="donnee text-right text-sm">
             {profil.qualitesPrioritaires.length === 3
               ? "Les trois qualités"
               : profil.qualitesPrioritaires.map((q) => qualiteLabelLong[q]).join(" + ")}
@@ -265,7 +267,7 @@ export default function ProfilPage() {
         </div>
         <div className="flex items-start justify-between gap-3">
           <span className="shrink-0 text-sm text-foreground-muted">Pondération</span>
-          <span className="text-right text-sm">
+          <span className="donnee text-right text-sm">
             {profil.objectifs.course}% course · {profil.objectifs.muscu}% muscu ·{" "}
             {profil.objectifs.explosivite}% explosivité
           </span>
@@ -273,32 +275,32 @@ export default function ProfilPage() {
         {profil.autresSports.length > 0 && (
           <div className="flex items-start justify-between gap-3">
             <span className="shrink-0 text-sm text-foreground-muted">Autres sports</span>
-            <span className="text-right text-sm">
+            <span className="donnee text-right text-sm">
               {profil.autresSports.map((s) => `${s.nom} (${s.frequenceParSemaine}x)`).join(", ")}
             </span>
           </div>
         )}
         <div className="flex items-start justify-between gap-3">
           <span className="shrink-0 text-sm text-foreground-muted">Matériel</span>
-          <span className="text-right text-sm">{profil.materiel.join(", ")}</span>
+          <span className="donnee text-right text-sm">{profil.materiel.join(", ")}</span>
         </div>
       </Card>
 
       <div className="grid grid-cols-3 gap-3">
-        <div className="col-span-2">
+        <div className="col-span-2" data-pro>
           <GraphiqueEvolution points={pointsEvolution} onSelectionner={setJourSelectionne} />
         </div>
-        <button onClick={() => setPoidsOuvert(true)} className="text-left">
+        <button data-pro onClick={() => setPoidsOuvert(true)} className="text-left">
           <Card className="flex h-full flex-col justify-center gap-3 p-3">
             <div>
               <p className="text-xs text-foreground-muted">Poids</p>
-              <p className="text-lg font-semibold">
+              <p className="donnee text-lg font-semibold">
                 {profil.poidsKg !== undefined ? `${profil.poidsKg} kg` : "—"}
               </p>
             </div>
             <div>
               <p className="text-xs text-foreground-muted">Fatigue moy.</p>
-              <p className="text-lg font-semibold">
+              <p className="donnee text-lg font-semibold">
                 {fatigueMoyenne !== null ? `${fatigueMoyenne.toFixed(1)}/10` : "—"}
               </p>
             </div>
@@ -317,7 +319,7 @@ export default function ProfilPage() {
         <TuileAction
           icone={<IconAbonnement />}
           label="Abonnement"
-          onClick={() => setAbonnementOuvert(true)}
+          onClick={() => (verrouille ? ouvrirPaywall() : setAbonnementOuvert(true))}
         />
         <TuileAction
           icone={<IconModifier />}

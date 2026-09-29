@@ -48,6 +48,7 @@ export function BilanSemaine({
     <div>
       <div className="flex flex-col items-center gap-2 pb-2 pt-4 text-center">
         <Button
+          data-pro
           variant="secondary"
           disabled={!peutGenerer}
           onClick={() => setEtat("confirmation")}

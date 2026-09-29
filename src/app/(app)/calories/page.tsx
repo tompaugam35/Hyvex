@@ -29,7 +29,7 @@ export default function CaloriesPage() {
 
       <Card className="flex flex-col items-center gap-5 py-6">
         <div className="text-center">
-          <p className="text-4xl font-bold">
+          <p className="donnee text-4xl font-bold">
             {arrondi(totaux.calories)}
             {objectifs && (
               <span className="text-lg font-normal text-foreground-muted">
@@ -90,14 +90,14 @@ export default function CaloriesPage() {
                     width={56}
                     height={56}
                     unoptimized
-                    className="h-14 w-14 shrink-0 rounded-xl object-cover"
+                    className="donnee h-14 w-14 shrink-0 rounded-xl object-cover"
                   />
                 ) : (
                   <div className="h-14 w-14 shrink-0 rounded-xl bg-surface-muted" />
                 )}
                 <div className="flex-1">
-                  <p className="font-medium">{r.titre}</p>
-                  <p className="text-xs text-foreground-muted">
+                  <p className="donnee font-medium">{r.titre}</p>
+                  <p className="donnee text-xs text-foreground-muted">
                     {arrondi(r.calories)} kcal · P {arrondi(r.proteinesG)}g · G{" "}
                     {arrondi(r.glucidesG)}g · L {arrondi(r.lipidesG)}g
                   </p>
@@ -127,7 +127,7 @@ function Macro({
   return (
     <div className="flex flex-col items-center gap-1 rounded-xl bg-surface-muted px-2 py-3">
       <span className={`h-2 w-2 rounded-full ${couleur}`} />
-      <p className="whitespace-nowrap text-base font-semibold">
+      <p className="donnee whitespace-nowrap text-base font-semibold">
         {arrondi(grammes)}g
         {objectifGrammes !== undefined && (
           <span className="text-xs font-normal text-foreground-muted">

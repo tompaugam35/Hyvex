@@ -12,7 +12,7 @@ export function BilanPrecedent({ semaine }: { semaine: SemaineHistorique }) {
 
   return (
     <div>
-      <Button variant="secondary" onClick={() => setOuvert(true)} className="w-full">
+      <Button data-pro variant="secondary" onClick={() => setOuvert(true)} className="w-full">
         Revoir le bilan de la semaine {semaine.numeroSemaine}
       </Button>
 

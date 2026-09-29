@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { creerClientServeur } from "@/lib/supabase/server";
+import { aAccesComplet } from "@/lib/abonnement";
 import { versRepas } from "@/lib/supabase/mappers";
 import { analyserRepasIA } from "@/lib/ia/analyser-repas";
 
@@ -13,6 +14,10 @@ export async function POST(request: Request) {
 
   if (!user) {
     return NextResponse.json({ erreur: "Non authentifié" }, { status: 401 });
+  }
+
+  if (!(await aAccesComplet(supabase, user.id))) {
+    return NextResponse.json({ erreur: "Abonnement requis" }, { status: 402 });
   }
 
   const body = await request.json();

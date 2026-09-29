@@ -117,6 +117,18 @@ create table if not exists public.repas (
   created_at timestamptz not null default now()
 );
 
+-- Abonnement payant. Rempli uniquement côté serveur (webhook Stripe) : aucune
+-- politique d'écriture pour l'utilisateur, sinon il pourrait s'auto-débloquer.
+create table if not exists public.abonnements (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  statut text not null,
+  offre text,
+  fin_periode timestamptz,
+  stripe_customer_id text,
+  stripe_subscription_id text,
+  updated_at timestamptz not null default now()
+);
+
 alter table public.profils enable row level security;
 alter table public.programmes enable row level security;
 alter table public.journal_seances enable row level security;
@@ -124,6 +136,7 @@ alter table public.semaines_historique enable row level security;
 alter table public.poids_historique enable row level security;
 alter table public.strava_tokens enable row level security;
 alter table public.repas enable row level security;
+alter table public.abonnements enable row level security;
 
 create policy "Un utilisateur gère son propre profil"
   on public.profils for all
@@ -159,3 +172,7 @@ create policy "Un utilisateur gère ses propres repas"
   on public.repas for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+create policy "Un utilisateur lit son propre abonnement"
+  on public.abonnements for select
+  using (auth.uid() = user_id);

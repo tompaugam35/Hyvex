@@ -75,7 +75,7 @@ export function CapturePhoto({
         onChange={surSelection}
         className="hidden"
       />
-      <Button onClick={() => inputRef.current?.click()} disabled={enCours} className="w-full">
+      <Button data-pro onClick={() => inputRef.current?.click()} disabled={enCours} className="w-full">
         {enCours ? "Analyse de ton repas…" : "Prendre une photo de ton assiette"}
       </Button>
       {erreurLocale && <p className="text-xs text-danger">{erreurLocale}</p>}
