@@ -16,12 +16,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const verrouille = acces.charge && !acces.actif;
   const [paywallOuvert, setPaywallOuvert] = useState(true);
+  const [bienvenueMasquee, setBienvenueMasquee] = useState(false);
 
   useEffect(() => {
     if (charge && (!profil || !programme)) {
       router.replace("/onboarding");
     }
   }, [charge, profil, programme, router]);
+
+  useEffect(() => {
+    if (!acces.vientDePayer) return;
+    const minuteur = setTimeout(() => setBienvenueMasquee(true), 3500);
+    return () => clearTimeout(minuteur);
+  }, [acces.vientDePayer]);
 
   // Le détail d'une séance est réservé aux abonnés : pas de contournement par l'URL.
   useEffect(() => {
@@ -75,7 +82,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </main>
         <BottomNav />
       </div>
-      {verrouille && (
+      {acces.validationPaiement && (
+        <p className="fixed inset-x-0 top-4 z-50 mx-auto flex w-fit items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-medium text-background">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+          Paiement reçu, on débloque ton compte…
+        </p>
+      )}
+      {acces.vientDePayer && !bienvenueMasquee && (
+        <p className="fixed inset-x-0 top-4 z-50 mx-auto flex w-fit items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm font-medium text-background">
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-background text-[11px] text-foreground">✓</span>
+          Bienvenue dans Hyvex, tout est débloqué
+        </p>
+      )}
+      {verrouille && !acces.validationPaiement && (
         <Paywall
           prenom={profil.prenom}
           programme={programme}

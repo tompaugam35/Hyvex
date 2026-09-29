@@ -67,7 +67,8 @@ export function Paywall({
 }) {
   const router = useRouter();
   const [offre, setOffre] = useState<Offre>("starter");
-  const [bientot, setBientot] = useState(false);
+  const [redirection, setRedirection] = useState(false);
+  const [erreur, setErreur] = useState(false);
 
   const nbSeances = programme.seances.length;
   const premiere = [...programme.seances].sort(
@@ -75,6 +76,24 @@ export function Paywall({
       (a.jour ? JOURS_SEMAINE.indexOf(a.jour as (typeof JOURS_SEMAINE)[number]) : 99) -
       (b.jour ? JOURS_SEMAINE.indexOf(b.jour as (typeof JOURS_SEMAINE)[number]) : 99)
   )[0];
+
+  async function payer() {
+    setRedirection(true);
+    setErreur(false);
+    try {
+      const reponse = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ offre }),
+      });
+      const { url } = (await reponse.json()) as { url?: string };
+      if (!reponse.ok || !url) throw new Error();
+      window.location.href = url;
+    } catch {
+      setRedirection(false);
+      setErreur(true);
+    }
+  }
 
   async function seDeconnecter() {
     await creerClientNavigateur().auth.signOut();
@@ -164,12 +183,12 @@ export function Paywall({
         </div>
 
         <div className={s.bas}>
-          <button type="button" className={s.cta} onClick={() => setBientot(true)}>
-            <span>Débloquer avec {nomOffre[offre]}</span>
+          <button type="button" className={s.cta} onClick={payer} disabled={redirection}>
+            <span>{redirection ? "Ouverture du paiement…" : `Débloquer avec ${nomOffre[offre]}`}</span>
             <span className={s.fleche}>→</span>
           </button>
-          {bientot ? (
-            <p className={s.bientot}>Le paiement sécurisé arrive très bientôt.</p>
+          {erreur ? (
+            <p className={s.bientot}>Le paiement n&apos;a pas pu s&apos;ouvrir. Réessaie dans un instant.</p>
           ) : (
             <p className={s.mention}>
               Annulable à tout moment · paiement sécurisé · <Link href="/tarifs">voir les offres</Link>

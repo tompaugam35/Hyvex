@@ -124,6 +124,7 @@ create table if not exists public.abonnements (
   statut text not null,
   offre text,
   fin_periode timestamptz,
+  resiliation_prevue boolean not null default false,
   stripe_customer_id text,
   stripe_subscription_id text,
   updated_at timestamptz not null default now()

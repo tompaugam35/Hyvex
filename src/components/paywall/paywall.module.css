@@ -430,3 +430,7 @@
     bottom: 20px;
   }
 }
+
+.cta:disabled {
+  opacity: 0.8;
+}
