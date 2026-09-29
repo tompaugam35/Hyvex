@@ -12,7 +12,7 @@ interface Abonnement {
   resiliation_prevue: boolean;
 }
 
-const nomOffre: Record<string, string> = { starter: "Starter pack", pro: "Pro" };
+const nomOffre: Record<string, string> = { starter: "Starter pack", pro: "Pro", offert: "Accès offert" };
 
 const libelleStatut: Record<string, string> = {
   active: "Actif",
@@ -59,6 +59,7 @@ export function AbonnementModal({ onFermer }: { onFermer: () => void }) {
     }
   }
 
+  const offert = abonnement?.offre === "offert";
   const finPeriode = abonnement?.fin_periode
     ? new Date(abonnement.fin_periode).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
     : null;
@@ -105,12 +106,13 @@ export function AbonnementModal({ onFermer }: { onFermer: () => void }) {
         )}
 
         <div className="flex flex-col gap-2">
-          {abonnement ? (
+          {abonnement && !offert ? (
             <Button onClick={gerer} disabled={ouverture} className="w-full">
               {ouverture ? "Ouverture…" : "Gérer mon abonnement"}
             </Button>
           ) : (
-            charge && (
+            charge &&
+            !offert && (
               <Link href="/tarifs">
                 <Button className="w-full">Voir les offres</Button>
               </Link>
