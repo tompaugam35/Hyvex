@@ -282,7 +282,7 @@ function CarteBilan({
           ) : (
             <span />
           )}
-          <span style={{ fontSize: 10, fontWeight: 500 }}>hyvex.app</span>
+          <span style={{ fontSize: 10, fontWeight: 500 }}>hyvex.fr</span>
         </div>
       </div>
     </div>
