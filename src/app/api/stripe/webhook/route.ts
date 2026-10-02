@@ -43,7 +43,8 @@ async function enregistrerAbonnement(abonnementId: string, userIdSecours?: strin
     },
     { onConflict: "user_id" }
   );
-  if (error) throw new Error(error.message);
+  // 23503 : le compte a été supprimé entre-temps, il n'y a plus rien à mettre à jour.
+  if (error && error.code !== "23503") throw new Error(error.message);
 }
 
 export async function POST(request: Request) {

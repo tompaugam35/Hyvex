@@ -9,6 +9,7 @@ import { GraphiqueEvolution } from "@/components/profil/GraphiqueEvolution";
 import { ModifierPoidsModal } from "@/components/profil/ModifierPoidsModal";
 import { DetailJourModal } from "@/components/profil/DetailJourModal";
 import { AbonnementModal } from "@/components/profil/AbonnementModal";
+import { SupprimerCompteModal } from "@/components/profil/SupprimerCompteModal";
 import { useAcces } from "@/components/paywall/AccesContexte";
 import { useProgramme } from "@/lib/use-programme";
 import { useStrava } from "@/lib/use-strava";
@@ -155,6 +156,7 @@ export default function ProfilPage() {
   const [avatarOuvert, setAvatarOuvert] = useState(false);
   const [poidsOuvert, setPoidsOuvert] = useState(false);
   const [abonnementOuvert, setAbonnementOuvert] = useState(false);
+  const [suppressionOuverte, setSuppressionOuverte] = useState(false);
   const [jourSelectionne, setJourSelectionne] = useState<PointEvolution | null>(null);
   const { points: pointsEvolution, fatigueMoyenne, rafraichir: rafraichirEvolution } = usePoidsFatigue();
   const {
@@ -332,12 +334,17 @@ export default function ProfilPage() {
         <p className="text-center text-xs text-foreground-muted">{messageStrava}</p>
       )}
 
-      <button
-        onClick={seDeconnecter}
-        className="mt-auto self-center px-3 py-1.5 text-xs text-foreground-muted"
-      >
-        Se déconnecter
-      </button>
+      <div className="mt-auto flex flex-col items-center gap-1">
+        <button onClick={seDeconnecter} className="px-3 py-1.5 text-xs text-foreground-muted">
+          Se déconnecter
+        </button>
+        <button
+          onClick={() => setSuppressionOuverte(true)}
+          className="px-3 py-1 text-[11px] text-foreground-muted/70 underline underline-offset-2"
+        >
+          Supprimer mon compte
+        </button>
+      </div>
 
       {modificationOuverte && (
         <ModifierProfilPanel
@@ -374,6 +381,8 @@ export default function ProfilPage() {
       )}
 
       {abonnementOuvert && <AbonnementModal onFermer={() => setAbonnementOuvert(false)} />}
+
+      {suppressionOuverte && <SupprimerCompteModal onFermer={() => setSuppressionOuverte(false)} />}
     </div>
   );
 }

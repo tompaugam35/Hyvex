@@ -72,3 +72,10 @@ export async function recupererActivitesDeCourse(
   const activites: ActiviteStrava[] = await reponse.json();
   return activites.filter((a) => a.sport_type === "Run" || a.sport_type === "TrailRun");
 }
+
+export async function deautoriserStrava(accessToken: string) {
+  await fetch("https://www.strava.com/oauth/deauthorize", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+}
