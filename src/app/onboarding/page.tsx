@@ -80,6 +80,7 @@ export default function OnboardingPage() {
 
   const emailValide = /\S+@\S+\.\S+/.test(email);
   const motDePasseValide = motDePasse.length >= 6;
+  const [conditionsAcceptees, setConditionsAcceptees] = useState(false);
   const sommeAutresSports = autresSports.reduce((t, s) => t + s.frequenceParSemaine, 0);
   const plancherSeances = sommeAutresSports + 1;
   const seancesEffectif = Math.max(seances, plancherSeances);
@@ -97,7 +98,9 @@ export default function OnboardingPage() {
     materiel: materiel.length > 0,
     "objectif-poids": true,
     compte:
-      compteEtat === "formulaire" ? emailValide && motDePasseValide : compteEtat === "erreur_generation",
+      compteEtat === "formulaire"
+        ? emailValide && motDePasseValide && conditionsAcceptees
+        : compteEtat === "erreur_generation",
   }[stepKey];
 
   function toggleQualite(q: Qualite) {
@@ -607,6 +610,26 @@ export default function OnboardingPage() {
                     className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-base outline-none focus:border-foreground"
                   />
                 </div>
+                <label className="flex cursor-pointer items-start gap-3 text-xs leading-relaxed text-foreground-muted">
+                  <input
+                    type="checkbox"
+                    checked={conditionsAcceptees}
+                    onChange={(e) => setConditionsAcceptees(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--foreground)]"
+                  />
+                  <span>
+                    J&apos;accepte les{" "}
+                    <a href="/cgv" target="_blank" rel="noreferrer" className="underline">
+                      CGV
+                    </a>{" "}
+                    et la{" "}
+                    <a href="/confidentialite" target="_blank" rel="noreferrer" className="underline">
+                      politique de confidentialité
+                    </a>
+                    , et j&apos;accepte que mes données de santé (poids, fatigue, ressentis, repas)
+                    soient utilisées pour personnaliser mon programme.
+                  </span>
+                </label>
               </>
             )}
             {authErreur && (

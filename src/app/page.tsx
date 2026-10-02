@@ -133,7 +133,9 @@ export default function Accueil() {
       <footer className={s.pied}>
         <span data-revele>© 2026 Hyvex</span>
         <span data-revele>
-          <Link href="/tarifs">Tarifs</Link> · <Link href="/connexion">Connexion</Link>
+          <Link href="/tarifs">Tarifs</Link> · <Link href="/connexion">Connexion</Link> ·{" "}
+          <Link href="/cgv">CGV</Link> · <Link href="/confidentialite">Confidentialité</Link> ·{" "}
+          <Link href="/mentions-legales">Mentions légales</Link>
         </span>
       </footer>
     </Revelation>

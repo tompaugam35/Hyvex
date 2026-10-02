@@ -13,9 +13,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ erreur: "Non authentifié" }, { status: 401 });
   }
 
-  const { offre } = (await request.json().catch(() => ({}))) as { offre?: Offre };
+  const { offre, consentement } = (await request.json().catch(() => ({}))) as {
+    offre?: Offre;
+    consentement?: boolean;
+  };
   if (offre !== "starter" && offre !== "pro") {
     return NextResponse.json({ erreur: "Offre inconnue" }, { status: 400 });
+  }
+  if (consentement !== true) {
+    return NextResponse.json({ erreur: "Acceptation des CGV requise" }, { status: 400 });
   }
 
   const origine = new URL(request.url).origin;
@@ -37,7 +43,18 @@ export async function POST(request: Request) {
     ...(abonnement?.stripe_customer_id
       ? { customer: abonnement.stripe_customer_id }
       : { customer_email: user.email }),
-    subscription_data: { metadata: { user_id: user.id } },
+    subscription_data: {
+      metadata: {
+        user_id: user.id,
+        // Preuve de l'acceptation des CGV et de la renonciation au droit de rétractation.
+        cgv_acceptees_le: new Date().toISOString(),
+      },
+    },
+    custom_text: {
+      submit: {
+        message: `En t'abonnant, tu acceptes les [CGV](${origine}/cgv) et demandes l'accès immédiat au service, ce qui te fait renoncer à ton droit de rétractation. Résiliable à tout moment.`,
+      },
+    },
     allow_promotion_codes: true,
     locale: "fr",
     success_url: `${origine}/dashboard?paiement=ok`,

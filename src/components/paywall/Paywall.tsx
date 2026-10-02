@@ -69,6 +69,8 @@ export function Paywall({
   const [offre, setOffre] = useState<Offre>("starter");
   const [redirection, setRedirection] = useState(false);
   const [erreur, setErreur] = useState(false);
+  const [consentement, setConsentement] = useState(false);
+  const [rappelConsentement, setRappelConsentement] = useState(false);
 
   const nbSeances = programme.seances.length;
   const premiere = [...programme.seances].sort(
@@ -78,13 +80,17 @@ export function Paywall({
   )[0];
 
   async function payer() {
+    if (!consentement) {
+      setRappelConsentement(true);
+      return;
+    }
     setRedirection(true);
     setErreur(false);
     try {
       const reponse = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ offre }),
+        body: JSON.stringify({ offre, consentement }),
       });
       const { url } = (await reponse.json()) as { url?: string };
       if (!reponse.ok || !url) throw new Error();
@@ -183,6 +189,24 @@ export function Paywall({
         </div>
 
         <div className={s.bas}>
+          <label className={`${s.consentement} ${rappelConsentement && !consentement ? s.consentementRappel : ""}`}>
+            <input
+              type="checkbox"
+              checked={consentement}
+              onChange={(e) => {
+                setConsentement(e.target.checked);
+                setRappelConsentement(false);
+              }}
+            />
+            <span>
+              J&apos;accepte les{" "}
+              <a href="/cgv" target="_blank" rel="noreferrer">
+                CGV
+              </a>{" "}
+              et je demande l&apos;accès immédiat au service, ce qui me fait renoncer à mon droit de
+              rétractation de 14 jours.
+            </span>
+          </label>
           <button type="button" className={s.cta} onClick={payer} disabled={redirection}>
             <span>{redirection ? "Ouverture du paiement…" : `Débloquer avec ${nomOffre[offre]}`}</span>
             <span className={s.fleche}>→</span>

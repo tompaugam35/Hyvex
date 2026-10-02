@@ -97,6 +97,9 @@ export default function Tarifs() {
       <p className={s.note} data-revele>
         Toutes les offres donnent accès à tout Hyvex. Aucun abonnement n&apos;est engageant : tu
         arrêtes quand tu veux. Paiement sécurisé.
+        <br />
+        <Link href="/cgv">CGV</Link> · <Link href="/confidentialite">Confidentialité</Link> ·{" "}
+        <Link href="/mentions-legales">Mentions légales</Link>
       </p>
     </Revelation>
   );

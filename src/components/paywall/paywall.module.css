@@ -434,3 +434,37 @@
 .cta:disabled {
   opacity: 0.8;
 }
+
+.consentement {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: start;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--foreground-muted);
+  cursor: pointer;
+  border-radius: 12px;
+  transition: color 0.2s;
+}
+.consentement input {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  accent-color: var(--foreground);
+}
+.consentement a {
+  text-decoration: underline;
+}
+.consentementRappel {
+  color: var(--foreground);
+  animation: secousse 0.35s;
+}
+@keyframes secousse {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
